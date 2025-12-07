@@ -3,7 +3,7 @@ $Header = "ESX/ESXi VMKernel Warnings: [count]"
 $Comments = "The following VMKernel issues were found, it is suggested all unknown issues are explored on the VMware Knowledge Base and vSphere documentation. Use the below links to automatically search for the string"
 $Display = "Table"
 $Author = "Alan Renouf, Frederic Martin"
-$PluginVersion = 1.4
+$PluginVersion = 1.5
 $PluginCategory = "vSphere"
 
 # Start of Settings
@@ -32,9 +32,9 @@ foreach ($VMHost in ($HostsViews)) {
                $Details.Message = $_
                $Details.Length = ($Details.Message).Length
                $MessageEncoded = [System.Uri]::EscapeDataString($Details.Message)
-               $Details.KBSearch = "<a href='http://kb.vmware.com/selfservice/microsites/search.do?searchString=$MessageEncoded&sortByOverride=PUBLISHEDDATE&sortOrder=-1' target='_blank'>Click Here</a>"
+               $Details.KBSearch = "<a href='https://knowledge.broadcom.com/search?term=$MessageEncoded' target='_blank'>Broadcom KB Search</a>"
                $Details.Google = "<a href='http://www.google.co.uk/search?q=$MessageEncoded' target='_blank'>Click Here</a>"
-               $Details.vSphereDocs = "<a href='https://www.vmware.com/docs/vsphere-esxi-vcenter-server-80-troubleshooting-guide' target='_blank'>vSphere 8.0 Troubleshooting</a>"
+               $Details.vSphereDocs = "<a href='https://docs.vmware.com/en/VMware-vSphere/8.0/vsphere-troubleshooting/index.html' target='_blank'>vSphere 8.0 Troubleshooting</a>"
             }
             $VMKernelWarning += $Details
          }
@@ -55,9 +55,9 @@ foreach ($VMHost in ($HostsViews)) {
                $Details.Message = $_
                $Details.Length = ($Details.Message).Length
                $MessageEncoded = [System.Uri]::EscapeDataString($Details.Message)
-               $Details.KBSearch = "<a href='http://kb.vmware.com/selfservice/microsites/search.do?searchString=$MessageEncoded&sortByOverride=PUBLISHEDDATE&sortOrder=-1' target='_blank'>Click Here</a>"
+               $Details.KBSearch = "<a href='https://knowledge.broadcom.com/search?term=$MessageEncoded' target='_blank'>Broadcom KB Search</a>"
                $Details.Google = "<a href='http://www.google.co.uk/search?q=$MessageEncoded' target='_blank'>Click Here</a>"
-               $Details.vSphereDocs = "<a href='https://www.vmware.com/docs/vsphere-esxi-vcenter-server-80-troubleshooting-guide' target='_blank'>vSphere 8.0 Troubleshooting</a>"
+               $Details.vSphereDocs = "<a href='https://docs.vmware.com/en/VMware-vSphere/8.0/vsphere-troubleshooting/index.html' target='_blank'>vSphere 8.0 Troubleshooting</a>"
             }
             $VMKernelWarning += $Details
          }
