@@ -64,8 +64,14 @@ param (
 
 	[Switch]$GUIConfig,
 
-	[ValidateScript({ Test-Path $_ -PathType 'Container' })]
-	[string]$OutputPath = $Env:TEMP,
+	[ValidateScript({ 
+			$parentPath = Split-Path $_ -Parent
+			if ($parentPath -and -not (Test-Path $parentPath -PathType 'Container')) {
+				throw "Parent path '$parentPath' does not exist"
+			}
+			$true
+		})]
+	[string]$OutputPath = (Join-Path (Split-Path ((Get-Variable MyInvocation).Value).MyCommand.Path) "Reports"),
 
 	[ValidateScript({ Test-Path $_ -PathType 'Leaf' })]
 	[string]$Job,
@@ -932,7 +938,7 @@ if ($SetupSetting -or $config -or $GUIConfig) {
 	}	
 
 	# Prompt for vCenter server address first - this should be the first thing asked
-	$vCentercredfile = $ScriptPath + "\vCentercreds.xml"
+	$vCentercredfile = $ScriptPath + "\vCenterCreds.xml"
 	$CurrentServer = $null
 	if (Test-Path $vCentercredfile) {
 		$existingCreds = Import-Clixml $vCentercredfile
