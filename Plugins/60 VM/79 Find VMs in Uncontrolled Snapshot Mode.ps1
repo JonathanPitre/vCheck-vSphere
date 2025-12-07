@@ -30,9 +30,9 @@ $vmdks = @()
 $items = @()
 
 $i = 0
-$datastoresToProcess = $Datastores | Where-Object {$_.Name -notmatch $ExcludeDS -and $_.State -eq "Available"}
+$datastoresToProcess = $Datastores | Where-Object { $_.Name -notmatch $ExcludeDS -and $_.State -eq "Available" }
 foreach ($Datastore in $datastoresToProcess) {
-    Write-Progress -ID 2 -Parent 1 -Activity $pLang.pluginActivity -Status ($pLang.pluginStatus -f $i, $datastoresToProcess.count, $Datastore.Name) -PercentComplete ($i*100/$datastoresToProcess.count)
+    Write-Progress -ID 2 -Parent 1 -Activity $pLang.pluginActivity -Status ($pLang.pluginStatus -f $i, $datastoresToProcess.count, $Datastore.Name) -PercentComplete ($i * 100 / $datastoresToProcess.count)
 
     $DatastoreBrowser = Get-View $Datastore.ExtensionData.Browser
 
@@ -79,13 +79,13 @@ foreach ($Datastore in $datastoresToProcess) {
 foreach ($vmFile in ($items | Sort-Object FolderPath)) {
     $vmFile.FolderPath -match '^\[([^\]]+)\] ([^/]+)' > $null
     $VMName = $matches[2]
-    $eachVM = $FullVM | Where-Object {$_.Name -eq $VMName}
+    $eachVM = $FullVM | Where-Object { $_.Name -eq $VMName }
     if (!$eachVM.snapshot) {
         # Only process VMs without snapshots
         $vmdks += New-Object -TypeName PSObject -Property @{
-            VM = $eachVM.Name
+            VM         = $eachVM.Name
             Datacenter = $vmFile.Datacenter
-            Path = $vmFile.Fullname
+            Path       = $vmFile.Fullname
         }
     }
 }
