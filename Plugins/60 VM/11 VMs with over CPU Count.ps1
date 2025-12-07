@@ -1,7 +1,7 @@
 $Title = "VMs with over CPU Count"
 $Display = "Table"
 $Author = "Alan Renouf, Bill Wall"
-$PluginVersion = 1.3
+$PluginVersion = 1.4
 $PluginCategory = "vSphere"
 
 # Start of Settings 
