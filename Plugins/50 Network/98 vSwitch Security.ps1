@@ -33,18 +33,14 @@ if ($Revision) {
     if ($Revision -ge 1012425) {
         $VersionOK = $true
         if ($Revision -ge 2548067) {
-            #PowerCLI 6+
-            if (!(Get-Module -Name VMware.VimAutomation.Vds -ErrorAction SilentlyContinue))
-            {
-                Import-Module VMware.VimAutomation.Vds
+            # PowerCLI 6+ prefers modules; avoid Add-PSSnapin failures
+            if (-not (Get-Module -Name VMware.VimAutomation.Vds -ErrorAction SilentlyContinue)) {
+                Import-Module VMware.VimAutomation.Vds -ErrorAction SilentlyContinue
             }
-            else
-            {
-                # Add required Snap-In
-                if (!(Get-PSSnapin -name VMware.VimAutomation.Vds -ErrorAction SilentlyContinue))
-                {
-                    Add-PSSnapin VMware.VimAutomation.Vds
-                }
+            # If still not loaded, bail out with a warning so we don't error noisily
+            if (-not (Get-Module -Name VMware.VimAutomation.Vds -ErrorAction SilentlyContinue)) {
+                Write-Warning "VMware.VimAutomation.Vds module is not available. vSwitch Security plugin will be skipped."
+                $VersionOK = $false
             }
         }
     }
