@@ -8,25 +8,23 @@ $ExcludeVMs = "Guest Introspection|ExcludeMe"
 # Update settings where there is an override
 $CBTEnabled = Get-vCheckSetting $Title "CBTEnabled" $CBTEnabled
 
-$FullVm | Where-Object {$_.Name -notmatch $ExcludeVMs} | Where-object {$_.Config.ChangeTrackingEnabled -ne $CBTEnabled} | Select-Object Name, @{Name="Change Block Tracking";Expression={if ($_.Config.ChangeTrackingEnabled) { "enabled" } else { "disabled" }}} | Sort-Object Name
+$FullVm | Where-Object { $_.Name -notmatch $ExcludeVMs } | Where-object { $_.Config.ChangeTrackingEnabled -ne $CBTEnabled } | Select-Object Name, @{Name = "Change Block Tracking"; Expression = { if ($_.Config.ChangeTrackingEnabled) { "enabled" } else { "disabled" } } } | Sort-Object Name
 
-if ($CBTEnabled)
-{
+if ($CBTEnabled) {
    $Header = "VM with CBT disabled: [count]"
-   $Comments = "List all VMs with CBT status disabled. It's not a good option for backup!"
-}
-else
-{
+   $Comments = "CBT (Changed Block Tracking) tracks changed disk blocks for fast incremental backups. These VMs have CBT disabled; enable it for protected workloads. See <a href='https://knowledge.broadcom.com/external/article/320557/changed-block-tracking-cbt-on-virtual-ma.html' target='_blank'>Broadcom KB 320557</a>."
+} else {
    $Header = "VM with CBT enabled: [count]"
-   $Comments = "List all VMs with CBT status enabled."
+   $Comments = "CBT (Changed Block Tracking) tracks changed disk blocks for fast incremental backups. These VMs have CBT enabled. See <a href='https://knowledge.broadcom.com/external/article/320557/changed-block-tracking-cbt-on-virtual-ma.html' target='_blank'>Broadcom KB 320557</a>."
 }
 
 $Title = "VM - Display all VMs with CBT unexpected status"
 $Display = "Table"
 $Author = "Cyril Epiney, Bill Wall"
-$PluginVersion = 1.2
+$PluginVersion = 1.3
 $PluginCategory = "vSphere"
 
 # Change Log
 ## 1.1 : Added Get-vCheckSetting
 ## 1.2 : Added Exclude VM setting
+## 1.3 : Clarified CBT purpose with VMware KB reference
