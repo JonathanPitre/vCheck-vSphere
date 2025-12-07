@@ -60,15 +60,15 @@
 #Requires -Version 3.0
 [CmdletBinding()]
 param (
-	[Switch]$config,
+	[Switch]$Config,
 
 	[Switch]$GUIConfig,
 
 	[ValidateScript({ Test-Path $_ -PathType 'Container' })]
-	[string]$Outputpath=$Env:TEMP,
+	[string]$OutputPath = $Env:TEMP,
 
 	[ValidateScript({ Test-Path $_ -PathType 'Leaf' })]
-	[string]$job,
+	[string]$Job,
 
 	[string]$VMFolder
 )
@@ -104,16 +104,15 @@ function Write-CustomOut ($Details) {
 
 <# Placeholder for now, just return the setting passed to it. Eventually this
    will be used for new settings handling #>
-function Get-vCheckSetting
-{
-   param 
-   (
-      [string]$Module,
-      [string]$Setting,
-      $default
-   )
+function Get-vCheckSetting {
+	param 
+	(
+		[string]$Module,
+		[string]$Setting,
+		$default
+	)
    
-   return $default
+	return $default
 }
 
 <# Search $file_content for name/value pair with ID_Name and return value #>
@@ -194,7 +193,7 @@ Function Invoke-Settings {
 				} else {
 					$NoQuestion = $true
 				}
-				$Split = ($file[$Line - 1]).Split("=",2)
+				$Split = ($file[$Line - 1]).Split("=", 2)
 				$VarWS = if ($Split[0] -match "^\s*") { $matches[0] } else { "" }
 				$Var = $Split[0].Trim()
 				$CurSet = $Split[1].Trim()
@@ -306,9 +305,9 @@ Function Invoke-HTMLSettings {
 			
 			$htmlOutput += "</table>"
 			$PluginConfig += New-Object PSObject -Property @{
-				"Details" = $htmlOutput;
-				"Header" = $PluginName;
-				"PluginID" = $PluginName;
+				"Details"  = $htmlOutput
+				"Header"   = $PluginName
+				"PluginID" = $PluginName
 			}
 
 			return $PluginConfig
@@ -323,8 +322,8 @@ function Format-HTMLEntities {
 	param ([string]$content)
 	
 	$replace = @{
-		"&lt;" = "<";
-		"&gt;" = ">";
+		"&lt;" = "<"
+		"&gt;" = ">"
 	}
 	
 	foreach ($r in $replace.Keys.GetEnumerator()) {
@@ -342,8 +341,7 @@ Function Get-HTMLTable {
 	$XMLTable.table.SetAttribute("width", "100%")
 	
 	# If only one column, fix up the table header
-	if (($content | Get-Member -MemberType Properties).count -eq 1)
-	{
+	if (($content | Get-Member -MemberType Properties).count -eq 1) {
 		$XMLTable.table.tr[0].th = (($content | Get-Member -MemberType Properties) | Select-Object -ExpandProperty Name -First 1).ToString()
 	}
 	
@@ -355,12 +353,9 @@ Function Get-HTMLTable {
 				if ($FormatRules.keys -contains $XMLTable.table.tr[0].th[$ColN]) {
 					# Current cell has a rule, test to see if they are valid
 					foreach ($rule in $FormatRules[$XMLTable.table.tr[0].th[$ColN]]) {
-						if ($XMLTable.table.tr[$RowN].td[$ColN]."#text")
-						{
+						if ($XMLTable.table.tr[$RowN].td[$ColN]."#text") {
 							$value = $XMLTable.table.tr[$RowN].td[$ColN]."#text"
-						}
-						else
-						{
+						} else {
 							$value = $XMLTable.table.tr[$RowN].td[$ColN]
 						}
 						if ($value -notmatch "^[0-9.]+$") {
@@ -372,7 +367,7 @@ Function Get-HTMLTable {
 							$RuleActions = ([string]$rule.Values).split(",")[1].split("|")
 							
 							switch ($RuleScope) {
-								"Row"  {
+								"Row" {
 									for ($TRColN = 0; $TRColN -lt $XMLTable.table.tr[$RowN].td.count; $TRColN++) {
 										$XMLTable.table.tr[$RowN].selectSingleNode("td[$($TRColN + 1)]").SetAttribute($RuleActions[0], $RuleActions[1])
 									}
@@ -431,8 +426,7 @@ Function Get-HTMLList {
 		}
 		
 		# If only one column, fix up the table header
-		if (($content | Get-Member -MemberType Properties).count -eq 1)
-		{
+		if (($content | Get-Member -MemberType Properties).count -eq 1) {
 			$XMLTable.table.tr[0].th = (($content | Get-Member -MemberType Properties) | Select-Object -ExpandProperty Name -First 1).ToString()
 		}
 		
@@ -470,10 +464,10 @@ function New-Chart {
 		[string]$titleX,
 		[string]$titleY,
 		[ValidateSet("Area", "Bar", "BoxPlot", "Bubble", "Candlestick", "Column", "Doughnut", "ErrorBar", "FastLine",
-						 "FastPoint", "Funnel", "Kagi", "Line", "Pie", "Point", "PointAndFigure", "Polar", "Pyramid",
-						 "Radar", "Range", "RangeBar", "RangeColumn", "Renko", "Spline", "SplineArea", "SplineRange",
-						 "StackedArea", "StackedArea100", "StackedBar", "StackedBar100", "StackedColumn",
-						 "StackedColumn100", "StepLine", "Stock", "ThreeLineBreak")]
+			"FastPoint", "Funnel", "Kagi", "Line", "Pie", "Point", "PointAndFigure", "Polar", "Pyramid",
+			"Radar", "Range", "RangeBar", "RangeColumn", "Renko", "Spline", "SplineArea", "SplineRange",
+			"StackedArea", "StackedArea100", "StackedBar", "StackedBar100", "StackedColumn",
+			"StackedColumn100", "StepLine", "Stock", "ThreeLineBreak")]
 		$ChartType = "bar"
 	)
 	
@@ -491,12 +485,12 @@ function New-Chart {
 	}
 	
 	return New-Object PSObject -Property @{
-		"height" = $height;
-		"width" = $width;
-		"data" = $data;
-		"title" = $title;
-		"titleX" = $titleX;
-		"titleY" = $titleY;
+		"height"    = $height
+		"width"     = $width
+		"data"      = $data
+		"title"     = $title
+		"titleX"    = $titleX
+		"titleY"    = $titleY
 		"ChartType" = $ChartType
 	}
 }
@@ -558,13 +552,13 @@ function Get-ChartResource {
 	[void][System.Reflection.Assembly]::LoadWithPartialName("System.Drawing")
 	
 	$bmp = New-Object System.Drawing.Bitmap(($ChartDef.width), ($ChartDef.height))
-	$bmp.SetResolution(384, 384);
+	$bmp.SetResolution(384, 384)
 	if ($ChartArea.BackColor -eq [System.Drawing.Color]::Transparent) {
 		$bmp.MakeTransparent()
 	}
 	$chart.DrawToBitmap($bmp, (new-object System.Drawing.Rectangle(0, 0, $ChartDef.width, $ChartDef.height)))
 	$ms = new-Object IO.MemoryStream
-	$bmp.Save($ms, [System.Drawing.Imaging.ImageFormat]::Png);
+	$bmp.Save($ms, [System.Drawing.Imaging.ImageFormat]::Png)
 	$ms.Seek(0, [System.IO.SeekOrigin]::Begin) | Out-Null
 	$byte = New-Object byte[] $ms.Length
 	$ms.read($byte, 0, $ms.length) | Out-Null
@@ -580,8 +574,8 @@ function Get-ChartColours {
 	
 	foreach ($colour in $ChartColours) {
 		[System.Drawing.Color]::FromArgb([Convert]::ToInt32($colour.Substring(0, 2), 16),
-		[Convert]::ToInt32($colour.Substring(2, 2), 16),
-		[Convert]::ToInt32($colour.Substring(4, 2), 16));
+			[Convert]::ToInt32($colour.Substring(2, 2), 16),
+			[Convert]::ToInt32($colour.Substring(4, 2), 16))
 	}
 }
 
@@ -601,9 +595,9 @@ function Add-ReportResource {
 	# If cid does not exist, add it
 	if ($global:ReportResources.Keys -notcontains $cid) {
 		$global:ReportResources.Add($cid, @{
-			"Data" = ("{0}|{1}" -f $Type, $ResourceData);
-			"Uses" = 0
-		})
+				"Data" = ("{0}|{1}" -f $Type, $ResourceData)
+				"Uses" = 0
+			})
 	}
 	
 	# Update uses count if $Used set (Should normally be incremented with Set-ReportResource)
@@ -635,7 +629,7 @@ function Get-ReportResource {
 	
 	# Process each resource type differently
 	switch ($data[0]) {
-		"File"   {
+		"File" {
 			# Check the path exists
 			if (Test-Path $data[1] -ErrorAction SilentlyContinue) {
 				if ($ReturnType -eq "embed") {
@@ -652,7 +646,7 @@ function Get-ReportResource {
 					# return a linked resource to be added to mail message
 					$lr = New-Object system.net.mail.LinkedResource(Convert-Path $data[1])
 					$lr.ContentId = $cid
-					return $lr;
+					return $lr
 				}
 			} else {
 				Write-Warning ($lang.resFileWarn -f $cid)
@@ -678,7 +672,7 @@ function Get-ReportResource {
 				# return a linked resource to be added to mail message
 				$lr = New-Object system.net.mail.LinkedResource($ms)
 				$lr.ContentId = $cid
-				return $lr;
+				return $lr
 			}
 		}
 		"Base64" {
@@ -688,11 +682,11 @@ function Get-ReportResource {
 			if ($ReturnType -eq "linkedresource") {
 				$w = [system.convert]::FromBase64String($data[2])
 				$ms = new-Object IO.MemoryStream
-				$ms.Write($w, 0, $w.Length);
+				$ms.Write($w, 0, $w.Length)
 				$ms.Seek(0, [System.IO.SeekOrigin]::Begin) | Out-Null
 				$lr = New-Object system.net.mail.LinkedResource($ms)
 				$lr.ContentId = $cid
-				return $lr;
+				return $lr
 			}
 		}
 	}
@@ -751,36 +745,88 @@ function Get-ConfigScripts {
 		}"
 }
 
+<# Prompts for and stores vCenter server address.
+   The server address is saved in the vCenterCreds.xml file.
+ #>
+function Set-vCenterServer ($OutputFile, $CurrentServer) {
+	$defaultServer = if ($CurrentServer) { $CurrentServer } else { "192.168.0.0" }
+	$ServerInput = Read-Host "Please Specify the address (and optional port) of the vCenter server to connect to [servername(:port)] [$defaultServer]"
+    
+	if ([string]::IsNullOrWhiteSpace($ServerInput)) {
+		$ServerInput = $defaultServer
+	}
+    
+	# Load existing credentials if file exists, otherwise create new object
+	if (Test-Path $OutputFile) {
+		$existing = Import-Clixml $OutputFile
+		$export = "" | Select-Object Server, Username, EncryptedPassword
+		$export.Server = $ServerInput
+		$export.Username = $existing.Username
+		$export.EncryptedPassword = $existing.EncryptedPassword
+	} else {
+		$export = "" | Select-Object Server, Username, EncryptedPassword
+		$export.Server = $ServerInput
+		$export.Username = $null
+		$export.EncryptedPassword = $null
+	}
+    
+	$export | Export-Clixml $OutputFile
+	Write-Host -ForegroundColor Green "vCenter server address saved to: $OutputFile"
+	Return $ServerInput
+}
+
 <# Prompts for and stores vCenter credentials in a secure manner.
    The username is saved in cleartext. The password is saved as a SecureString.
+   The server address is also saved in the same file.
    The output file is XML.
  #>
-function Set-vCenterCredentials ($OutputFile)
-{
-    $NewCredential = Get-Credential -Message @"
+function Set-vCenterCredentials ($OutputFile, $Server = $null) {
+	# Load existing server address if file exists
+	$existingServer = $null
+	if (Test-Path $OutputFile) {
+		$existing = Import-Clixml $OutputFile
+		if ($existing.Server) {
+			$existingServer = $existing.Server
+		}
+	}
+    
+	# Use provided Server parameter, or existing from file, or prompt if neither exists
+	if (-not $Server) {
+		$Server = $existingServer
+	}
+	if (-not $Server) {
+		$Server = Read-Host "Please Specify the address (and optional port) of the vCenter server to connect to [servername(:port)]"
+		if ([string]::IsNullOrWhiteSpace($Server)) {
+			$Server = "192.168.0.0"
+		}
+	}
+    
+	$NewCredential = Get-Credential -Message @"
 Enter the username and password for vCenter server '$Server'.
 These credentials will be stored securely at '$OutputFile'."
 "@
-    if ($NewCredential -eq $null) {
-        Write-Warning "No credentials were provided! Exiting."
-        Exit 1
-    }
-    $export = "" | Select-Object Username, EncryptedPassword 
-    $export.Username = $NewCredential.Username 
-    $export.EncryptedPassword = $NewCredential.Password | ConvertFrom-SecureString 
-    $export | Export-Clixml $OutputFile
-    Write-Host -foregroundcolor green "Credentials saved to: $OutputFile"
-    Return $NewCredential
+	if ($NewCredential -eq $null) {
+		Write-Warning "No credentials were provided! Exiting."
+		Exit 1
+	}
+    
+	$export = "" | Select-Object Server, Username, EncryptedPassword 
+	$export.Server = $Server
+	$export.Username = $NewCredential.Username 
+	$export.EncryptedPassword = $NewCredential.Password | ConvertFrom-SecureString 
+	$export | Export-Clixml $OutputFile
+	Write-Host -ForegroundColor Green "Credentials saved to: $OutputFile"
+	Return $NewCredential
 }
 
 <# Retrieves the securely stored vCenter credentials from a file on disk. #>
-function Get-vCenterCredentials ($InputFile)
-{
-    $credentials = Import-Clixml $InputFile
-    $import = "" | Select-Object Username, Password 
-    $import.Username = $credentials.Username
-    $import.Password = $credentials.EncryptedPassword | ConvertTo-SecureString
-    Return $import
+function Get-vCenterCredentials ($InputFile) {
+	$credentials = Import-Clixml $InputFile
+	$import = "" | Select-Object Server, Username, Password 
+	$import.Server = if ($credentials.Server) { $credentials.Server } else { $null }
+	$import.Username = $credentials.Username
+	$import.Password = $credentials.EncryptedPassword | ConvertTo-SecureString
+	Return $import
 }
 #endregion functions
 
@@ -806,7 +852,7 @@ if ($job) {
 		foreach ($PluginPath in ($jobConfig.vCheck.plugins.path -split ";")) {
 			if (Test-Path $PluginPath) {
 				$PluginPaths += (Get-Item $PluginPath).Fullname
-				$PluginPaths += Get-Childitem $PluginPath -Recurse | ?{ $_.PSIsContainer } | Select-Object -ExpandProperty FullName
+				$PluginPaths += Get-ChildItem $PluginPath -Recurse | ? { $_.PSIsContainer } | Select-Object -ExpandProperty FullName
 			} else {
 				$PluginPaths += $ScriptPath + "\Plugins"
 				Write-Warning ($lang.pluginpathInvalid -f $PluginPath, ($ScriptPath + "\Plugins"))
@@ -822,7 +868,7 @@ if ($job) {
 				$testedPaths++
 				if (Test-Path ("{0}\{1}" -f $PluginPath, $plugin)) {
 					$vCheckPlugins += Get-Item ("{0}\{1}" -f $PluginPath, $plugin)
-					break;
+					break
 				}
 				# Plugin not found in any search path
 				elseif ($testedPaths -eq $PluginPaths.Count) {
@@ -885,6 +931,33 @@ if ($SetupSetting -or $config -or $GUIConfig) {
 		Write-Warning -Message "$($_.value)"
 	}	
 
+	# Prompt for vCenter server address first - this should be the first thing asked
+	$vCentercredfile = $ScriptPath + "\vCentercreds.xml"
+	$CurrentServer = $null
+	if (Test-Path $vCentercredfile) {
+		$existingCreds = Import-Clixml $vCentercredfile
+		if ($existingCreds.Server) {
+			$CurrentServer = $existingCreds.Server
+		}
+	}
+	# Also check the connection plugin for existing server setting
+	if (-not $CurrentServer) {
+		$connectionPlugin = $vCheckPlugins | Where-Object { $_.Name -eq "00 Connection Plugin for vCenter.ps1" } | Select-Object -First 1
+		if ($connectionPlugin -and (Test-Path $connectionPlugin.FullName)) {
+			$pluginContent = Get-Content $connectionPlugin.FullName
+			$serverLine = $pluginContent | Select-String -Pattern '^\$Server\s*=' | Select-Object -First 1
+			if ($serverLine) {
+				$serverMatch = $serverLine -match '\$Server\s*=\s*"([^"]+)"'
+				if ($matches) {
+					$CurrentServer = $matches[1]
+				}
+			}
+		}
+	}
+	$Server = Set-vCenterServer -OutputFile $vCentercredfile -CurrentServer $CurrentServer
+	# Make Server available globally for use in config
+	$global:Server = $Server
+
 	if ($GUIConfig) {
 		$PluginResult = @()        
 
@@ -943,23 +1016,23 @@ if (-not $GUIConfig) {
 		$p++
 		Write-CustomOut ($lang.pluginStart -f $PluginInfo["Title"], $PluginInfo["Author"], $PluginInfo["Version"], $p, $vCheckPlugins.count)
 		$pluginStatus = ($lang.pluginStatus -f $p, $vCheckPlugins.count, $_.Name)
-		Write-Progress -ID 1 -Activity $lang.pluginActivity -Status $pluginStatus -PercentComplete (100 * $p/($vCheckPlugins.count))
-		$TTR = [math]::round((Measure-Command { $Details = @(. $_.FullName)}).TotalSeconds, 2)
+		Write-Progress -ID 1 -Activity $lang.pluginActivity -Status $pluginStatus -PercentComplete (100 * $p / ($vCheckPlugins.count))
+		$TTR = [math]::round((Measure-Command { $Details = @(. $_.FullName) }).TotalSeconds, 2)
 
 		Write-CustomOut ($lang.pluginEnd -f $PluginInfo["Title"], $PluginInfo["Author"], $PluginInfo["Version"], $p, $vCheckPlugins.count)
 		# Do a replacement for [count] for number of items returned in $header
 		$Header = $Header -replace "\[count\]", $Details.count
 
 		$PluginResult += New-Object PSObject -Property @{
-			"Title" = $Title;
-			"Author" = $PluginInfo["Author"];
-			"Version" = $PluginInfo["Version"];
-			"Details" = $Details;
-			"Display" = $Display;
-			"TableFormat" = $TableFormat;
-			"Header" = $Header;
-			"Comments" = $Comments;
-			"TimeToRun" = $TTR;
+			"Title"       = $Title
+			"Author"      = $PluginInfo["Author"]
+			"Version"     = $PluginInfo["Version"]
+			"Details"     = $Details
+			"Display"     = $Display
+			"TableFormat" = $TableFormat
+			"Header"      = $Header
+			"Comments"    = $Comments
+			"TimeToRun"   = $TTR
 		}
 	}
 	Write-Progress -ID 1 -Activity $lang.pluginActivity -Status $lang.Complete -Completed
@@ -970,7 +1043,7 @@ if (-not $GUIConfig) {
 		$Plugins = @()
 		foreach ($Plugin in (Get-ChildItem $PluginsFolder -Include *.ps1, *.ps1.disabled -Recurse)) {
 			$Plugins += New-Object PSObject -Property @{
-				"Name" = (Get-PluginID  $Plugin.FullName).Title;
+				"Name"    = (Get-PluginID  $Plugin.FullName).Title
 				"Enabled" = (($vCheckPlugins | Select-Object -ExpandProperty FullName) -Contains $plugin.FullName)
 			}
 		}
@@ -981,15 +1054,15 @@ if (-not $GUIConfig) {
 		}
 
 		$PluginResult += New-Object PSObject -Property @{
-			"Title" = $lang.repPRTitle;
-			"Author" = "vCheck";
-			"Version" = $vCheckVersion;
-			"Details" = $Plugins;
-			"Display" = "Table";
-			"TableFormat" = $null;
-			"Header" = $lang.repPRTitle;
-			"Comments" = $Comments;
-			"TimeToRun" = 0;
+			"Title"       = $lang.repPRTitle
+			"Author"      = "vCheck"
+			"Version"     = $vCheckVersion
+			"Details"     = $Plugins
+			"Display"     = "Table"
+			"TableFormat" = $null
+			"Header"      = $lang.repPRTitle
+			"Comments"    = $Comments
+			"TimeToRun"   = 0
 		}
 	}
 
@@ -997,15 +1070,15 @@ if (-not $GUIConfig) {
 	if ($TimeToRun) {
 		$Finished = Get-Date
 		$PluginResult += New-Object PSObject -Property @{
-			"Title" = $lang.repTTRTitle;
-			"Author" = "vCheck";
-			"Version" = $vCheckVersion;
-			"Details" = ($PluginResult | Where-Object { $_.TimeToRun -gt $PluginSeconds } | Select-Object Title, TimeToRun | Sort-Object TimeToRun -Descending);
-			"Display" = "List";
-			"TableFormat" = $null;
-			"Header" = ($lang.repTime -f [math]::round(($Finished - $Date).TotalMinutes, 2), ($Finished.ToLongDateString()), ($Finished.ToLongTimeString()));
-			"Comments" = ($lang.slowPlugins -f $PluginSeconds);
-			"TimeToRun" = 0;
+			"Title"       = $lang.repTTRTitle
+			"Author"      = "vCheck"
+			"Version"     = $vCheckVersion
+			"Details"     = ($PluginResult | Where-Object { $_.TimeToRun -gt $PluginSeconds } | Select-Object Title, TimeToRun | Sort-Object TimeToRun -Descending)
+			"Display"     = "List"
+			"TableFormat" = $null
+			"Header"      = ($lang.repTime -f [math]::round(($Finished - $Date).TotalMinutes, 2), ($Finished.ToLongDateString()), ($Finished.ToLongTimeString()))
+			"Comments"    = ($lang.slowPlugins -f $PluginSeconds)
+			"TimeToRun"   = 0
 		}
 	}
 
@@ -1022,7 +1095,7 @@ if (-not $GUIConfig) {
 		If ($pr.Details) {
 			$emptyReport = $false
 			switch ($pr.Display) {
-				"List"  { $pr.Details = Get-HTMLList $pr.Details }
+				"List" { $pr.Details = Get-HTMLList $pr.Details }
 				"Table" { $pr.Details = Get-HTMLTable $pr.Details $pr.TableFormat }
 				"Chart" { $pr.Details = Get-HTMLChart "plugin$($p)" $pr.Details }
 				default { $pr.Details = $null }
@@ -1030,8 +1103,7 @@ if (-not $GUIConfig) {
 			$pr | Add-Member -Type NoteProperty -Name pluginID -Value "plugin-$p"
 			$p++
 		}
-		if ($pr.Details -ne $null)
-		{
+		if ($pr.Details -ne $null) {
 			$emptyReport = $false
 		}
 	}
@@ -1075,7 +1147,7 @@ if (-not $GUIConfig) {
 		}
 		# Otherwise send the HTML email
 		else {
-			$msg.IsBodyHtml = $true;
+			$msg.IsBodyHtml = $true
 			$html = [System.Net.Mail.AlternateView]::CreateAlternateViewFromString($MyReport, $null, 'text/html')
 			$msg.AlternateViews.Add($html)
 
@@ -1083,7 +1155,7 @@ if (-not $GUIConfig) {
 			Foreach ($cid in $global:ReportResources.Keys) {
 				if ($global:ReportResources[$cid].Uses -gt 0) {
 					$lr = (Get-ReportResource $cid -ReturnType "linkedresource")
-					$html.LinkedResources.Add($lr);
+					$html.LinkedResources.Add($lr)
 				}
 			}
 		}
@@ -1099,7 +1171,7 @@ if (-not $GUIConfig) {
 		if ($EmailSSL -eq $true) {
 			$smtpClient.EnableSsl = $true
 		}
-		$smtpClient.UseDefaultCredentials = $true;
+		$smtpClient.UseDefaultCredentials = $true
 		$smtpClient.Send($msg)
 		If ($SendAttachment) { $attachment.Dispose() }
 		$msg.Dispose()
