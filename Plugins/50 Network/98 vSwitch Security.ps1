@@ -26,39 +26,33 @@ $IgnoreNets = Get-vCheckSetting $Title "IgnoreNets" $IgnoreNets
 # Check Power CLI version. Build must be at least 1012425 (5.1 Release 2) to contain Get-VDPortGroup cmdlet
 $VersionOK = $false
 
-# Obtain the Revision number of the VMWare.PowerCLI modules
-$Revision=(Get-Module VMWare.PowerCLI -listavailable).Version.Revision
+# Obtain the Revision number of the VMware.PowerCLI modules
+$Revision = (Get-Module VMWare.PowerCLI -ListAvailable | Select-Object -First 1).Version.Revision
 
-if ($Revision) {
-    if ($Revision -ge 1012425) {
-        $VersionOK = $true
-        if ($Revision -ge 2548067) {
-            # PowerCLI 6+ prefers modules; avoid Add-PSSnapin failures
-            if (-not (Get-Module -Name VMware.VimAutomation.Vds -ErrorAction SilentlyContinue)) {
-                Import-Module VMware.VimAutomation.Vds -ErrorAction SilentlyContinue
-            }
-            # If still not loaded, bail out with a warning so we don't error noisily
-            if (-not (Get-Module -Name VMware.VimAutomation.Vds -ErrorAction SilentlyContinue)) {
-                Write-Warning "VMware.VimAutomation.Vds module is not available. vSwitch Security plugin will be skipped."
-                $VersionOK = $false
-            }
+if ($Revision -ge 1012425) {
+    $VersionOK = $true
+    if ($Revision -ge 2548067) {
+        # PowerCLI 6+ prefers modules; avoid Add-PSSnapin failures
+        if (-not (Get-Module -Name VMware.VimAutomation.Vds -ErrorAction SilentlyContinue)) {
+            Import-Module VMware.VimAutomation.Vds -ErrorAction SilentlyContinue
+        }
+        # If still not loaded, bail out with a warning so we don't error noisily
+        if (-not (Get-Module -Name VMware.VimAutomation.Vds -ErrorAction SilentlyContinue)) {
+            Write-Warning "VMware.VimAutomation.Vds module is not available. vSwitch Security plugin will be skipped."
+            $VersionOK = $false
         }
     }
 }
 
-if ($VersionOK)
-{
+if ($VersionOK) {
     [array] $results = $null
 
     Get-VirtualSwitch | Where-Object { $_.Name -notmatch $IgnoreNets } | ForEach-Object {
         $Output = "" | Select-Object Host, Type, vSwitch, Portgroup, AllowPromiscuous, ForgedTransmits, MacChanges
-        if ($_.ExtensionData.Summary -ne $null)
-        {
+        if ($_.ExtensionData.Summary -ne $null) {
             $Output.Type = "vDS"
             $Output.Host = "*"
-        }
-        else
-        {
+        } else {
             $Output.Type = "vSS"
             $Output.Host = $_.VMHost
         }
@@ -73,12 +67,9 @@ if ($VersionOK)
     Get-VDPortGroup | Where-Object { $_.Name -notmatch $IgnoreNets } | ForEach-Object {
         $Output = "" | Select-Object Host, Type, vSwitch, Portgroup, AllowPromiscuous, ForgedTransmits, MacChanges
         $Output.Host = "*"
-        if ($_.ExtensionData.Config.Uplink -eq $true)
-        {
+        if ($_.ExtensionData.Config.Uplink -eq $true) {
             $Output.Type = "vDS Uplink Port Group"
-        }
-        else
-        {
+        } else {
             $Output.Type = "vDS Port Group"
         }
         $Output.vSwitch = $_.VDSwitch
@@ -105,9 +96,7 @@ if ($VersionOK)
     }
 
     if ($results.Host) { $results | Where-Object { ($_.AllowPromiscuous -and $AllowPromiscuousPolicy) -or ($_.ForgedTransmits -and $ForgedTransmitsPolicy -and $_.Type -ne "vDS Uplink Port Group") -or ($_.MacChanges -and $MacChangesPolicy) } | Sort-Object vSwitch, PortGroup }
-}
-else
-{
+} else {
     Write-Warning "PowerCLi version installed is lower than 5.1 Release 2"
     New-Object PSObject -Property @{"Message" = "PowerCLi version installed is lower than 5.1 Release 2, please update to use this plugin" }
 }
