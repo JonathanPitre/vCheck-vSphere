@@ -1,5 +1,5 @@
 $Title = "Host Power Management Policy"
-$Comments = "The following hosts are not using the specified power management policy.  Power management may impact performance for latency sensitive workloads.  For details see <a href='https://www.vmware.com/docs/vsphere-esxi-vcenter-server-80-performance-best-practices' >Performance Best Practices for VMware vSphere 8.0</a>"
+$Comments = "The following hosts are not using the specified power management policy.  Power management may impact performance for latency sensitive workloads.  For details see <a href='https://www.vmware.com/docs/vsphere-esxi-vcenter-server-80-performance-best-practices'>Performance Best Practices for VMware vSphere 8.0</a>"
 $Display = "Table"
 $Author = "Doug Taliaferro & Jonathan Pitre"
 $PluginVersion = 1.1
