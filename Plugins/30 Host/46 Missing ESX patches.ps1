@@ -28,7 +28,11 @@ $result = @()
 if ($vCenterVersion -ge 8) {
     try {
         # Try using ImageManager service (vLCM API)
-        $imageManager = Get-View -Id $ServiceInstance.Content.ImageManager -ErrorAction SilentlyContinue
+        $imageManagerRef = $ServiceInstance.Content.ImageManager
+        if ($null -eq $imageManagerRef) {
+            Write-Warning "vSphere Lifecycle Manager (vLCM) ImageManager service is not available. Ensure vLCM is properly configured in vCenter."
+        }
+        $imageManager = if ($imageManagerRef) { Get-View -Id $imageManagerRef -ErrorAction SilentlyContinue } else { $null }
         
         if ($imageManager) {
             foreach ($esx in $VMH) {
