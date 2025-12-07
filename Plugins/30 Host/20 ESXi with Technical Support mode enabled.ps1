@@ -1,9 +1,9 @@
 $Title = "ESXi with Technical Support mode or ESXi Shell enabled"
 $Header = "ESXi Hosts with Tech Support Mode or ESXi Shell Enabled : [count]"
-$Comments = "The following ESXi Hosts have Technical support mode or ESXi Shell enabled, this may not be the best security option. For more information see <a href='https://www.vmware.com/docs/vsphere-esxi-vcenter-server-80-security-configuration-guide' target='_blank'>vSphere Security Configuration Guide</a> and <a href='https://www.vmware.com/docs/vsphere-esxi-vcenter-server-80-performance-best-practices' target='_blank'>Performance Best Practices for VMware vSphere 8.0</a>."
+$Comments = "The following ESXi Hosts have Technical support mode or ESXi Shell enabled, this may not be the best security option. For more information see <a href='https://docs.vmware.com/en/VMware-vSphere/8.0/vsphere-security/index.html' target='_blank'>vSphere Security Configuration Guide</a> and <a href='https://docs.vmware.com/en/VMware-vSphere/8.0/vsphere-performance/index.html' target='_blank'>Performance Best Practices for VMware vSphere 8.0</a>."
 $Display = "Table"
 $Author = "Alan Renouf"
-$PluginVersion = 1.4
+$PluginVersion = 1.5
 $PluginCategory = "vSphere"
 
 # Start of Settings 
