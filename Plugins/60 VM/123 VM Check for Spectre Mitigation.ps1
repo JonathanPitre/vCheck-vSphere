@@ -48,11 +48,13 @@ foreach ($vmobj in $FullVM | Sort-Object -Property Name) {
         $result+=$tmp
     }
 }
+# Filter to only show affected VMs (Affected = $true or "N/A" for old hardware versions)
+$Result = $result | Where-Object { $_.Affected -eq $true -or $_.Affected -eq "N/A" }
 $Result
 
 $Title = "VMs Exposed to Spectre Vulnerability"
 $Header = "Virtual Machines Exposed to Spectre Vulnerability: $(@($Result).Count)"
-$Comments = "The following VMs require remediation to mitigate the Spectre vulnerability. See the following URLs for more information: <a href='https://kb.vmware.com/s/article/52085' target='_blank'>KB 52085</a>, <a href='https://www.virtuallyghetto.com/2018/01/verify-hypervisor-assisted-guest-mitigation-spectre-patches-using-powercli.html' target='_blank'>Virtually Ghetto</a>."
+$Comments = "The following VMs require remediation to mitigate the Spectre vulnerability. See the following URLs for more information: <a href='https://knowledge.broadcom.com/external/article?legacyId=52085' target='_blank'>KB 52085</a>, <a href='https://www.virtuallyghetto.com/2018/01/verify-hypervisor-assisted-guest-mitigation-spectre-patches-using-powercli.html' target='_blank'>Virtually Ghetto</a>."
 $Display = "Table"
 $Author = "William Lam"
 $PluginVersion = 1.0
