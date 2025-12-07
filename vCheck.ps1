@@ -192,18 +192,67 @@ Function Invoke-Settings {
 			
 			do {
 				
-				$NoQuestion = $Question = $Split = $VarWS = $Var = $CurSet = $null
-				if ($file[$Line - 1] -match "^\s*#") {
-					$Question = $file[$Line - 1]
+				$NoQuestion = $Question = $Split = $VarWS = $Var = $CurSet = $NewSet = $null
+				$currentLine = $file[$Line - 1]
+				
+				# Skip empty lines
+				if ([string]::IsNullOrWhiteSpace($currentLine)) {
 					$Line++
-				} else {
-					$NoQuestion = $true
+					continue
 				}
-				$Split = ($file[$Line - 1]).Split("=", 2)
-				$VarWS = if ($Split[0] -match "^\s*") { $matches[0] } else { "" }
+				
+				# Check if line is a comment/question (must start with #)
+				if ($currentLine -match "^\s*#") {
+					# Collect comment lines as question (may be multiple lines)
+					if ($null -eq $Question) {
+						$Question = $currentLine
+					} else {
+						# Append additional comment lines to question
+						$Question = "$Question`n$currentLine"
+					}
+					$Line++
+					# Continue to check next line
+					continue
+				}
+				
+				# Check if current line is a variable assignment (starts with $ and contains =)
+				# Must match pattern: $VariableName = value
+				if ($currentLine -notmatch "^\s*\$[a-zA-Z_][a-zA-Z0-9_]*\s*=") {
+					# Skip lines that don't match variable assignment pattern
+					$Line++
+					continue
+				}
+				
+				# We have a variable assignment line - split it safely
+				$Split = $currentLine.Split("=", 2)
+				# Validate split result - must have exactly 2 parts and second part must exist
+				if ($Split.Count -ne 2) {
+					# Skip lines that don't have a valid assignment
+					$Line++
+					continue
+				}
+				
+				# Validate that we have a variable name and a value
 				$Var = $Split[0].Trim()
+				if ([string]::IsNullOrWhiteSpace($Var) -or -not $Var.StartsWith('$')) {
+					$Line++
+					continue
+				}
+				
+				# Check if value part exists and is not null
+				if ([string]::IsNullOrWhiteSpace($Split[1])) {
+					$Line++
+					continue
+				}
+				
+				$VarWS = if ($Split[0] -match "^\s*") { $matches[0] } else { "" }
 				$CurSet = $Split[1].Trim()
-				if ($null -eq $Question) { $Question = $Var }
+				if ($null -eq $Question) { 
+					$Question = $Var 
+					$NoQuestion = $true
+				} else {
+					$NoQuestion = $false
+				}
 				
 				# Check if the current setting is quoted
 				$String = $false
@@ -212,7 +261,54 @@ Function Invoke-Settings {
 					$CurSet = $CurSet.Replace('"', '').Trim()					
 				} # end if
 				
-				$NewSet = Read-Host "$Question [$CurSet]"
+				# Skip prompting for Server in Connection Plugin if it was already set globally
+				$SkipPrompt = $false
+				# Check if this is the Server variable in the Connection Plugin
+				if ($Var -eq "Server") {
+					# Check if this is the Connection Plugin by filename or plugin name
+					# The filename will contain the path, so check for the plugin name in the path
+					$isConnectionPlugin = $false
+					$filenameLower = $Filename.ToLower()
+					$pluginNameLower = $PluginName.ToLower()
+					
+					# Check by filename (most reliable)
+					if ($filenameLower -match "00 connection plugin for vcenter" -or 
+						$filenameLower -match "connection.*vcenter.*\.ps1$") {
+						$isConnectionPlugin = $true
+					}
+					# Check by plugin title/name
+					elseif ($pluginNameLower -match "connection.*vcenter" -or 
+						$pluginNameLower -match "connection settings") {
+						$isConnectionPlugin = $true
+					}
+					
+					if ($isConnectionPlugin) {
+						# First check global variable (set during config - this should always be set if we're in config mode)
+						if ($global:Server -and $global:Server -ne "192.168.0.0") {
+							$NewSet = $global:Server
+							$SkipPrompt = $true
+						} else {
+							# Also check vCenterCreds.xml file (fallback if global not set)
+							# Use the same path construction as in the config section
+							$vCenterCredFile = $ScriptPath + "\vCenterCreds.xml"
+							if (Test-Path $vCenterCredFile) {
+								try {
+									$creds = Import-Clixml $vCenterCredFile
+									if ($creds.Server -and $creds.Server -ne "192.168.0.0") {
+										$NewSet = $creds.Server
+										$SkipPrompt = $true
+									}
+								} catch {
+									# If file read fails, continue with prompt
+								}
+							}
+						}
+					}
+				}
+				
+				if (-not $SkipPrompt) {
+					$NewSet = Read-Host "$Question [$CurSet]"
+				}
 				
 				If (-not $NewSet) {					
 					$NewSet = $CurSet					
@@ -298,10 +394,8 @@ Function Invoke-HTMLSettings {
 				$Var = $Split[0].Trim()
 				if ($Split.count -gt 1) {
 					$CurSet = $Split[1].Trim()
-					# Check if the current setting is in speech marks
-					$String = $false
+					# Remove surrounding quotes if present
 					if ($CurSet -match '"') {					
-						$String = $true
 						$CurSet = $CurSet.Replace('"', '').Trim()					
 					} # end if
 
@@ -520,7 +614,8 @@ function Get-ChartResource {
 	
 	# Set title and axis labels
 	if ($ChartDef.title) {
-		$titleRef = $Chart.Titles.Add($ChartDef.title)
+		# Add title without storing reference to avoid unused variable warning
+		$Chart.Titles.Add($ChartDef.title) | Out-Null
 	}
 	if ($ChartDef.titleX) {
 		$ChartArea.AxisX.Title = $ChartDef.titleX
@@ -811,7 +906,7 @@ function Set-vCenterCredentials ($OutputFile, $Server = $null) {
 Enter the username and password for vCenter server '$Server'.
 These credentials will be stored securely at '$OutputFile'."
 "@
-	if ($NewCredential -eq $null) {
+	if ($null -eq $NewCredential) {
 		Write-Warning "No credentials were provided! Exiting."
 		Exit 1
 	}
@@ -831,7 +926,12 @@ function Get-vCenterCredentials ($InputFile) {
 	$import = "" | Select-Object Server, Username, Password 
 	$import.Server = if ($credentials.Server) { $credentials.Server } else { $null }
 	$import.Username = $credentials.Username
-	$import.Password = $credentials.EncryptedPassword | ConvertTo-SecureString
+	# Only convert to SecureString if EncryptedPassword exists and is not null
+	if ($credentials.EncryptedPassword) {
+		$import.Password = $credentials.EncryptedPassword | ConvertTo-SecureString
+	} else {
+		$import.Password = $null
+	}
 	Return $import
 }
 #endregion functions
@@ -858,7 +958,7 @@ if ($job) {
 		foreach ($PluginPath in ($jobConfig.vCheck.plugins.path -split ";")) {
 			if (Test-Path $PluginPath) {
 				$PluginPaths += (Get-Item $PluginPath).Fullname
-				$PluginPaths += Get-ChildItem $PluginPath -Recurse | ? { $_.PSIsContainer } | Select-Object -ExpandProperty FullName
+				$PluginPaths += Get-ChildItem $PluginPath -Recurse | Where-Object { $_.PSIsContainer } | Select-Object -ExpandProperty FullName
 			} else {
 				$PluginPaths += $ScriptPath + "\Plugins"
 				Write-Warning ($lang.pluginpathInvalid -f $PluginPath, ($ScriptPath + "\Plugins"))
@@ -891,7 +991,7 @@ if ($job) {
 	$ToNatural = { [regex]::Replace($_, '\d+', { $args[0].Value.PadLeft(20) }) }
 	$vCheckPlugins = @(Get-ChildItem -Path $PluginsFolder -filter "*.ps1" -Recurse | Where-Object { $_.Directory -match "initialize" } | Sort-Object $ToNatural)
 	$PluginsSubFolder = Get-ChildItem -Path $PluginsFolder | Where-Object { ($_.PSIsContainer) -and ($_.Name -notmatch "initialize") -and ($_.Name -notmatch "finish") }
-	$vCheckPlugins += $PluginsSubFolder | % { Get-ChildItem -Path $_.FullName -filter "*.ps1" | Sort-Object $ToNatural }
+	$vCheckPlugins += $PluginsSubFolder | ForEach-Object { Get-ChildItem -Path $_.FullName -filter "*.ps1" | Sort-Object $ToNatural }
 	$vCheckPlugins += Get-ChildItem -Path $PluginsFolder -filter "*.ps1" -Recurse | Where-Object { $_.Directory -match "finish" } | Sort-Object $ToNatural
 	$GlobalVariables = $ScriptPath + "\GlobalVariables.ps1"
 }
@@ -936,33 +1036,61 @@ if ($SetupSetting -or $config -or $GUIConfig) {
 	($lang.GetEnumerator() | Where-Object { $_.Name -match "setupMsg[0-9]*" } | Sort-Object Name) | ForEach-Object {		
 		Write-Warning -Message "$($_.value)"
 	}	
-
-	# Prompt for vCenter server address first - this should be the first thing asked
-	$vCentercredfile = $ScriptPath + "\vCenterCreds.xml"
+	
+	# Process GlobalVariables first to get $vCenterCredentialsFile
+	Invoke-Settings -Filename $GlobalVariables -GB $true
+	
+	# Re-read GlobalVariables to get the updated $vCenterCredentialsFile value
+	. $GlobalVariables
+	
+	# Get the vCenter credentials file path from GlobalVariables
+	$vCentercredfile = if ($vCenterCredentialsFile) {
+		# Expand ${ScriptPath} if present in the path
+		$vCenterCredentialsFile -replace '\$\{ScriptPath\}', $ScriptPath
+	} else {
+		# Fallback to default location
+		$ScriptPath + "\vCenterCreds.xml"
+	}
+	
+	# Check for existing server address in the credentials file
 	$CurrentServer = $null
 	if (Test-Path $vCentercredfile) {
-		$existingCreds = Import-Clixml $vCentercredfile
-		if ($existingCreds.Server) {
-			$CurrentServer = $existingCreds.Server
-		}
-	}
-	# Also check the connection plugin for existing server setting
-	if (-not $CurrentServer) {
-		$connectionPlugin = $vCheckPlugins | Where-Object { $_.Name -eq "00 Connection Plugin for vCenter.ps1" } | Select-Object -First 1
-		if ($connectionPlugin -and (Test-Path $connectionPlugin.FullName)) {
-			$pluginContent = Get-Content $connectionPlugin.FullName
-			$serverLine = $pluginContent | Select-String -Pattern '^\$Server\s*=' | Select-Object -First 1
-			if ($serverLine) {
-				$serverMatch = $serverLine -match '\$Server\s*=\s*"([^"]+)"'
-				if ($matches) {
-					$CurrentServer = $matches[1]
-				}
+		try {
+			$existingCreds = Import-Clixml $vCentercredfile
+			if ($existingCreds.Server -and $existingCreds.Server -ne "192.168.0.0") {
+				$CurrentServer = $existingCreds.Server
 			}
+		} catch {
+			# File exists but is invalid, will prompt
 		}
 	}
-	$Server = Set-vCenterServer -OutputFile $vCentercredfile -CurrentServer $CurrentServer
-	# Make Server available globally for use in config
+	
+	# Only prompt for server address if not found in credentials file
+	if (-not $CurrentServer) {
+		$Server = Set-vCenterServer -OutputFile $vCentercredfile -CurrentServer $null
+	} else {
+		# Use the existing server without prompting again
+		$Server = $CurrentServer
+	}
+	
+	# Make Server available globally for use in config (so Connection Plugin doesn't prompt)
 	$global:Server = $Server
+
+	# Ensure credentials file has credentials; prompt once if missing
+	$needsCreds = $true
+	if (Test-Path $vCentercredfile) {
+		try {
+			$loadedCreds = Import-Clixml $vCentercredfile
+			if ($loadedCreds.Username -and $loadedCreds.EncryptedPassword) {
+				$needsCreds = $false
+			}
+		} catch {
+			$needsCreds = $true
+		}
+	}
+	if ($needsCreds) {
+		Set-vCenterCredentials -OutputFile $vCentercredfile -Server $Server | Out-Null
+	}
 
 	if ($GUIConfig) {
 		$PluginResult = @()        
@@ -995,8 +1123,23 @@ if ($SetupSetting -or $config -or $GUIConfig) {
 		}
 
 	} elseif ($SetupSetting -or $config) {
-		Invoke-Settings -Filename $GlobalVariables -GB $true
+		# GlobalVariables already processed above, now process plugins
 		Foreach ($plugin in $vCheckPlugins) {
+			# Skip prompting for the Connection Plugin if Server is already known and saved
+			$pluginNameLower = $plugin.Name.ToLower()
+			if ($pluginNameLower -like "*connection plugin for vcenter.ps1") {
+				if ($global:Server -and $global:Server -ne "192.168.0.0" -and (Test-Path $vCentercredfile)) {
+					try {
+						$existingCreds = Import-Clixml $vCentercredfile
+						if ($existingCreds.Server -and $existingCreds.Server -ne "192.168.0.0") {
+							# Skip this plugin; we already have the server from creds/global
+							continue
+						}
+					} catch {
+						# If read fails, fall through to normal processing
+					}
+				}
+			}
 			Invoke-Settings -Filename $plugin.Fullname
 		}
 	}
@@ -1016,14 +1159,16 @@ if (-not $GUIConfig) {
 
 	# Loop over all enabled plugins
 	$p = 0
-	$vCheckPlugins | Foreach {
+	$vCheckPlugins | ForEach-Object {
 		$TableFormat = $null
 		$PluginInfo = Get-PluginID $_.Fullname
 		$p++
 		Write-CustomOut ($lang.pluginStart -f $PluginInfo["Title"], $PluginInfo["Author"], $PluginInfo["Version"], $p, $vCheckPlugins.count)
 		$pluginStatus = ($lang.pluginStatus -f $p, $vCheckPlugins.count, $_.Name)
 		Write-Progress -ID 1 -Activity $lang.pluginActivity -Status $pluginStatus -PercentComplete (100 * $p / ($vCheckPlugins.count))
-		$TTR = [math]::round((Measure-Command { $Details = @(. $_.FullName) }).TotalSeconds, 2)
+		$duration = Measure-Command { $script:pluginOutput = @(. $_.FullName) }
+		$Details = $script:pluginOutput
+		$TTR = [math]::round($duration.TotalSeconds, 2)
 
 		Write-CustomOut ($lang.pluginEnd -f $PluginInfo["Title"], $PluginInfo["Author"], $PluginInfo["Version"], $p, $vCheckPlugins.count)
 		# Do a replacement for [count] for number of items returned in $header
@@ -1109,7 +1254,7 @@ if (-not $GUIConfig) {
 			$pr | Add-Member -Type NoteProperty -Name pluginID -Value "plugin-$p"
 			$p++
 		}
-		if ($pr.Details -ne $null) {
+		if ($null -ne $pr.Details) {
 			$emptyReport = $false
 		}
 	}

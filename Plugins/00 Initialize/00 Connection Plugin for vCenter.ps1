@@ -7,14 +7,32 @@ $Display = "None"
 $PluginCategory = "vSphere"
 
 # Start of Settings
-# Please Specify the address (and optional port) of the vCenter server to connect to [servername(:port)]
-$Server = "192.168.0.0"
 # Include SRM placeholder VMs in report?
 $IncludeSRMPlaceholders = $false
 # End of Settings
 
 # Update settings where there is an override
-$Server = Get-vCheckSetting $Title "Server" $Server
+# Check if Server was already set globally (from vCenterCreds.xml during config)
+if ($global:Server) {
+    $Server = $global:Server
+} else {
+    # Also check vCenterCreds.xml file directly
+    $vCenterCredFile = Join-Path $ScriptPath "vCenterCreds.xml"
+    if (Test-Path $vCenterCredFile) {
+        try {
+            $creds = Import-Clixml $vCenterCredFile
+            if ($creds.Server) {
+                $Server = $creds.Server
+            }
+        } catch {
+            # If file read fails, continue with Get-vCheckSetting
+        }
+    }
+    # Only prompt if not already set
+    if ($Server -eq "192.168.0.0") {
+        $Server = Get-vCheckSetting $Title "Server" $Server
+    }
+}
 
 # Setup plugin-specific language table
 $pLang = DATA {
@@ -145,11 +163,29 @@ if ($OpenConnection.IsConnected) {
     Write-CustomOut ("{0}: {1}" -f $pLang.connReuse, $Server)
     $VIConnection = $OpenConnection
 } else {
-    $LoadedCredentials = if (Test-Path $vCenterCredFile) {
-        Get-vCenterCredentials($vCenterCredFile)
-    } else {
-        Set-vCenterCredentials($vCenterCredFile)
+    # Check if credentials file exists and has valid credentials
+    $hasValidCredentials = $false
+    if (Test-Path $vCenterCredFile) {
+        try {
+            $LoadedCredentials = Get-vCenterCredentials($vCenterCredFile)
+            # Validate that credentials are complete (Username and Password both exist)
+            if ($LoadedCredentials -and 
+                $LoadedCredentials.Username -and 
+                $LoadedCredentials.Password -and 
+                $null -ne $LoadedCredentials.Password) {
+                $hasValidCredentials = $true
+            }
+        } catch {
+            # Credentials file exists but is invalid, will prompt for new credentials
+            $hasValidCredentials = $false
+        }
     }
+    
+    # If no valid credentials, prompt for them
+    if (-not $hasValidCredentials) {
+        $LoadedCredentials = Set-vCenterCredentials($vCenterCredFile, $Server)
+    }
+    
     $vCenterCreds = New-Object System.Management.Automation.PsCredential($LoadedCredentials.Username, $LoadedCredentials.Password)
     Write-CustomOut ("{0}: {1}" -f $pLang.connOpen, $Server)
     $VIConnection = Connect-VIServer -Server $VIServer -Port $Port -Credential $vCenterCreds
@@ -324,8 +360,8 @@ function Get-VMLastPoweredOnDate {
     }
 }
 
-New-VIProperty -Name LastPoweredOffDate -ObjectType VirtualMachine -Value { (Get-VMLastPoweredOffDate -vm $Args[0]).LastPoweredOffDate } | Out-Null
-New-VIProperty -Name LastPoweredOnDate -ObjectType VirtualMachine -Value { (Get-VMLastPoweredOnDate -vm $Args[0]).LastPoweredOnDate } | Out-Null
+New-VIProperty -Name LastPoweredOffDate -ObjectType VirtualMachine -Value { (Get-VMLastPoweredOffDate -vm $Args[0]).LastPoweredOffDate } -Force -ErrorAction SilentlyContinue | Out-Null
+New-VIProperty -Name LastPoweredOnDate  -ObjectType VirtualMachine -Value { (Get-VMLastPoweredOnDate  -vm $Args[0]).LastPoweredOnDate }  -Force -ErrorAction SilentlyContinue | Out-Null
 
 New-VIProperty -Name PercentFree -ObjectType Datastore -Value {
     param($ds)
