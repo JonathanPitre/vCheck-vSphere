@@ -12,10 +12,10 @@ Import-LocalizedData -BaseDirectory ($ScriptPath + "\Lang") -BindingVariable pLa
 
 $Title = "VMs in uncontrolled snapshot mode"
 $Header = "VMs in uncontrolled snapshot mode: [count]"
-$Comments = "The following VMs are in snapshot mode, but vCenter isn't aware of it. See http://kb.vmware.com/kb/1002310"
+$Comments = "The following VMs are in snapshot mode, but vCenter isn't aware of it. See <a href='https://knowledge.broadcom.com/external/article?legacyId=1002310' target='_blank'>KB 1002310</a>"
 $Display = "Table"
 $Author = "Rick Glover, Matthias Koehler, Dan Rowe, Bill Wall, Legion87"
-$PluginVersion = 1.7
+$PluginVersion = 1.8
 $PluginCategory = "vSphere"
 
 # Start of Settings
@@ -98,3 +98,4 @@ $vmdks
 # Changelog
 ## 1.6 : Added setting to exclude DS
 ## 1.7 : Optimized using vSphere API SearchDatastoreSubFolders for significant performance improvement (reduces execution time from hours to minutes)
+## 1.8 : Updated KB link to Broadcom Knowledge Base format and formatted as clickable HTML anchor tag
