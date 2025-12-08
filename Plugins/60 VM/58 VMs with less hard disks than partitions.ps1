@@ -1,6 +1,6 @@
-$Title = "Virtual machines with less hard disks than partitions"
-$Header = "Virtual machines with less hard disks than partitions: [count]"
-$Comments = "Virtual machines with less hard disks than partitions. Probably they have more than one partition on a hard disk."
+$Title = "VMs with less hard disks than partitions"
+$Header = "VMs with less hard disks than partitions: [count]"
+$Comments = "VMs with less hard disks than partitions. Probably they have more than one partition on a hard disk."
 $Display = "Table"
 $Author = "Robert van den Nieuwendijk"
 $PluginVersion = 1.4
