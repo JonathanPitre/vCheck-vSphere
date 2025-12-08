@@ -3,7 +3,7 @@ $Header = "VMs with old hardware: [count]"
 $Comments = "The following VMs are not at the latest hardware version, you may gain performance enhancements if you convert them to the latest version. Hardware version threshold is automatically detected from your ESXi hosts or the Broadcom KB article (<a href='https://knowledge.broadcom.com/external/article?legacyId=1003746' target='_blank'>KB 1003746</a>)."
 $Display = "Table"
 $Author = "Alan Renouf, Jonathan Pitre"
-$PluginVersion = 1.4
+$PluginVersion = 1.5
 $PluginCategory = "vSphere"
 
 # Start of Settings 
@@ -51,12 +51,6 @@ function Get-MaxHardwareVersionFromHosts {
             } catch {
                 # Ignore host errors
             }
-        }
-        
-        # If we found VMs, add some buffer (hosts typically support higher versions than existing VMs)
-        if ($maxHWVersion -gt 0) {
-            # Add 2-3 versions as buffer, but cap at reasonable maximum
-            $maxHWVersion = [Math]::Min($maxHWVersion + 3, 25)
         }
         
         return $maxHWVersion
@@ -286,3 +280,4 @@ $result
 ##       Added dynamic hardware version detection - plugin now automatically detects max hardware version from ESXi hosts, 
 ##       falls back to scraping Broadcom KB article (KB 1003746), and uses hardcoded defaults as last resort. 
 ##       This makes the plugin future-proof and eliminates the need for manual updates when new vSphere versions are released.
+## 1.5 : Use the observed maximum hardware version directly (no buffer) so VMs matching the installed vSphere-supported level are not reported.
