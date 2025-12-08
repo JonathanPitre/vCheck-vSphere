@@ -1,9 +1,9 @@
 $Title = "VM Tools Issues"
 $Header = "VM Tools Issues: [count]"
-$Comments = "The following VMs have issues with VMTools, these should be checked and reinstalled if necessary"
+$Comments = "Powered-on VMs where VMware Tools is present but not reporting key guest details (name/IP/hostname/disk/net). Indicates broken/stale Tools or guest reporting issues."
 $Display = "Table"
-$Author = "Alan Renouf"
-$PluginVersion = 1.2
+$Author = "Alan Renouf and Jonathan Pitre"
+$PluginVersion = 1.3
 $PluginCategory = "vSphere"
 
 # Start of Settings 
@@ -14,7 +14,25 @@ $VMTDoNotInclude = ""
 # Update settings where there is an override
 $VMTDoNotInclude = Get-vCheckSetting $Title "VMTDoNotInclude" $VMTDoNotInclude
 
-$FullVM | Where-Object {$_.Name -notmatch $VMTDoNotInclude -and $_.Guest.GuestState -eq "Running" -And ($_.Guest.GuestFullName -eq $NULL -or $_.Guest.IPAddress -eq $NULL -or $_.Guest.HostName -eq $NULL -or $_.Guest.Disk -eq $NULL -or $_.Guest.Net -eq $NULL)} | Select-Object Name, @{N="IPAddress";E={$_.Guest.IPAddress[0]}},@{n="OSFullName";E={$_.Guest.GuestFullName}},@{n="HostName";e={$_.guest.hostname}},@{N="NetworkLabel";E={$_.guest.Net[0].Network}} -ErrorAction SilentlyContinue | Sort-Object Name
+$FullVM |
+Where-Object {
+    $_.Name -notmatch $VMTDoNotInclude -and
+    $_.Guest.GuestState -eq "Running" -and
+    (
+        $_.Guest.GuestFullName -eq $null -or
+        $_.Guest.IPAddress -eq $null -or
+        $_.Guest.HostName -eq $null -or
+        $_.Guest.Disk -eq $null -or
+        $_.Guest.Net -eq $null
+    )
+} |
+Select-Object Name,
+@{N = "IPAddress"; E = { if ($_.Guest.IPAddress) { $_.Guest.IPAddress[0] } else { $null } } },
+@{N = "OSFullName"; E = { $_.Guest.GuestFullName } },
+@{N = "HostName"; E = { $_.Guest.HostName } },
+@{N = "NetworkLabel"; E = { if ($_.Guest.Net -and $_.Guest.Net[0]) { $_.Guest.Net[0].Network } else { $null } } } |
+Sort-Object Name
 
 # Change Log
 ## 1.2 : Added Get-vCheckSetting
+## 1.3 : Safer guest data extraction (vSphere 8 U2+), clarified description
