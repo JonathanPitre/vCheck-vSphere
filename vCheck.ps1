@@ -849,7 +849,26 @@ function Get-ConfigScripts {
 <# Prompts for and stores vCenter server address.
    The server address is saved in the vCenterCreds.xml file.
  #>
+function Resolve-CredsFilePath($Path) {
+	# Ensure we always work with a valid path; fall back to ScriptPath\vCenterCreds.xml
+	if ([string]::IsNullOrWhiteSpace($Path)) {
+		return (Join-Path $ScriptPath "vCenterCreds.xml")
+	}
+	try {
+		$resolved = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($Path)
+	} catch {
+		$resolved = $null
+	}
+	if (-not $resolved) {
+		$resolved = Join-Path $ScriptPath "vCenterCreds.xml"
+	}
+	return $resolved
+}
+
 function Set-vCenterServer ($OutputFile, $CurrentServer) {
+	$OutputFile = Resolve-CredsFilePath $OutputFile
+	$OutputDir = Split-Path -Parent $OutputFile
+	if ($OutputDir -and -not (Test-Path $OutputDir)) { New-Item -ItemType Directory -Path $OutputDir -Force | Out-Null }
 	$defaultServer = if ($CurrentServer) { $CurrentServer } else { "192.168.0.0" }
 	$ServerInput = Read-Host "Please Specify the address (and optional port) of the vCenter server to connect to [servername(:port)] [$defaultServer]"
     
@@ -882,6 +901,9 @@ function Set-vCenterServer ($OutputFile, $CurrentServer) {
    The output file is XML.
  #>
 function Set-vCenterCredentials ($OutputFile, $Server = $null) {
+	$OutputFile = Resolve-CredsFilePath $OutputFile
+	$OutputDir = Split-Path -Parent $OutputFile
+	if ($OutputDir -and -not (Test-Path $OutputDir)) { New-Item -ItemType Directory -Path $OutputDir -Force | Out-Null }
 	# Load existing server address if file exists
 	$existingServer = $null
 	if (Test-Path $OutputFile) {
@@ -922,6 +944,7 @@ These credentials will be stored securely at '$OutputFile'."
 
 <# Retrieves the securely stored vCenter credentials from a file on disk. #>
 function Get-vCenterCredentials ($InputFile) {
+	$InputFile = Resolve-CredsFilePath $InputFile
 	$credentials = Import-Clixml $InputFile
 	$import = "" | Select-Object Server, Username, Password 
 	$import.Server = if ($credentials.Server) { $credentials.Server } else { $null }
