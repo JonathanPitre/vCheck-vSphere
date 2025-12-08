@@ -891,7 +891,6 @@ function Set-vCenterServer ($OutputFile, $CurrentServer) {
 	}
     
 	$export | Export-Clixml $OutputFile
-	Write-Host -ForegroundColor Green "vCenter server address saved to: $OutputFile"
 	Return $ServerInput
 }
 
@@ -938,7 +937,7 @@ These credentials will be stored securely at '$OutputFile'."
 	$export.Username = $NewCredential.Username 
 	$export.EncryptedPassword = $NewCredential.Password | ConvertFrom-SecureString 
 	$export | Export-Clixml $OutputFile
-	Write-Host -ForegroundColor Green "Credentials saved to: $OutputFile"
+	Write-Host -ForegroundColor Green "vCenter connection info saved to: $OutputFile"
 	Return $NewCredential
 }
 
