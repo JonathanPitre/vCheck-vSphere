@@ -64,6 +64,11 @@ $serverParts = $Server -Split ":"
 $VIServer = $serverParts[0]
 $port = if ($serverParts[1]) { $serverParts[1] } else { 443 }
 
+# Bail out early if no usable server was provided
+if ([string]::IsNullOrWhiteSpace($VIServer) -or $VIServer -eq "192.168.0.0") {
+    throw "vCheck aborted: vCenter server is not set. Please update the Server setting or vCenterCreds.xml."
+}
+
 # Path to vCenter credentials file which will be created if not already existing
 $vCenterCredFile = Join-Path $ScriptPath "vCenterCreds.xml"
 
@@ -186,13 +191,36 @@ if ($OpenConnection.IsConnected) {
         $LoadedCredentials = Set-vCenterCredentials($vCenterCredFile, $Server)
     }
     
+    if (-not $LoadedCredentials -or -not $LoadedCredentials.Username -or -not $LoadedCredentials.Password) {
+        throw "vCheck aborted: vCenter credentials are missing or incomplete."
+    }
     $vCenterCreds = New-Object System.Management.Automation.PsCredential($LoadedCredentials.Username, $LoadedCredentials.Password)
     Write-CustomOut ("{0}: {1}" -f $pLang.connOpen, $Server)
-    $VIConnection = Connect-VIServer -Server $VIServer -Port $Port -Credential $vCenterCreds
+
+    $connectionError = $null
+    $promptedForNewCreds = $false
+    do {
+        try {
+            $VIConnection = Connect-VIServer -Server $VIServer -Port $Port -Credential $vCenterCreds -ErrorAction Stop
+            $connectionError = $null
+        } catch {
+            $connectionError = $_
+            if (-not $promptedForNewCreds) {
+                Write-Warning "Stored vCenter credentials failed. Prompting for new credentials..."
+                $LoadedCredentials = Set-vCenterCredentials($vCenterCredFile, $Server)
+                $vCenterCreds = New-Object System.Management.Automation.PsCredential($LoadedCredentials.Username, $LoadedCredentials.Password)
+                $promptedForNewCreds = $true
+            } else {
+                break
+            }
+        }
+    } while ($connectionError)
 }
 
-if (-not $VIConnection.IsConnected) {
+if (-not $VIConnection -or -not $VIConnection.IsConnected) {
     Write-Error $pLang.connError
+    if ($connectionError) { Write-Error $connectionError }
+    throw "vCheck aborted: unable to connect to vCenter $VIServer on port $Port."
 }
 
 function Get-VMFolderPath {
