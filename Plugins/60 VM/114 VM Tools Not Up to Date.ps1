@@ -38,13 +38,14 @@ $OutdatedStatuses = @(
    "guestToolsNeedUpgrade",
    "guestToolsNotInstalled",
    "guestToolsUnmanaged",
-   "guestToolsSupportedOld"
+   "guestToolsSupportedOld",
+   "guestToolsNotRunning"   # running but stopped/out of date
 )
 
 $query = $FullVM | Where-Object {
    $_.Name -notmatch $VMTDoNotInclude -and
    $_.Runtime.Powerstate -eq "poweredOn" -and
-   $OutdatedStatuses -contains $_.ExtensionData.Guest.ToolsVersionStatus2
+   $OutdatedStatuses -contains ($_.ExtensionData.Guest.ToolsVersionStatus2 ?? $_.ExtensionData.Guest.ToolsVersionStatus)
 }
 
 if ($VMTMaxReturn -gt 0) {
@@ -54,7 +55,7 @@ if ($VMTMaxReturn -gt 0) {
 $query |
 Select-Object Name,
 @{N = "Version"; E = { $_.Guest.ToolsVersion } },
-@{N = "Status"; E = { $_.ExtensionData.Guest.ToolsVersionStatus2 } },
+@{N = "Status"; E = { $_.ExtensionData.Guest.ToolsVersionStatus2 ?? $_.ExtensionData.Guest.ToolsVersionStatus } },
 @{N = "RunningStatus"; E = { $_.ExtensionData.Guest.ToolsRunningStatus } } |
 Sort-Object Name
 
