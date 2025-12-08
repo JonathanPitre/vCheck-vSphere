@@ -190,6 +190,8 @@ if ($vCenterVersion -ge 8 -and $EnablevLCMRemediation -and $result) {
     if (-not $lifecycleModule) {
         Write-Warning "vLCM remediation requested but VMware.Lifecycle module not installed. Install VMware.PowerCLI 13.2+ to enable vLCM cmdlets."
     } else {
+        # Import the module so vLCM cmdlets are available
+        Import-Module VMware.Lifecycle -ErrorAction Stop
         # Remediate per-cluster to avoid partial host remediation
         $nonCompliantClusters = $result | Select-Object -ExpandProperty Cluster -Unique | Where-Object { $_ -ne "Standalone" }
         foreach ($clusterName in $nonCompliantClusters) {
