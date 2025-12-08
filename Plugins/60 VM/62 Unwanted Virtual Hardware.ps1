@@ -24,7 +24,7 @@ foreach ($vmguest in ($FullVM | Where-Object { $_.Name -notmatch $ExcludeVM })) 
    }
 }
 
-#Thanks to @lucd http://communities.vmware.com/message/1546618
+#Thanks to @lucd (community contribution)
 
 # Change Log
 ## 1.2 : Added Get-vCheckSetting
