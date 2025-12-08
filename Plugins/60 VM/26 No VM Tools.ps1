@@ -3,7 +3,7 @@ $Header = "No VM Tools: [count]"
 $Comments = "Powered-on VMs where VMware Tools is not installed or not running. Tools are required for optimized drivers (VMXNET3/PVSCSI), graceful ops, and performance."
 $Display = "Table"
 $Author = "Alan Renouf and Jonathan Pitre"
-$PluginVersion = 1.3
+$PluginVersion = 1.4
 $PluginCategory = "vSphere"
 
 # Start of Settings
@@ -18,15 +18,22 @@ $VMTDoNotInclude = Get-vCheckSetting $Title "VMTDoNotInclude" $VMTDoNotInclude
 $noToolsStatuses = @("guestToolsNotInstalled", "guestToolsNotRunning")
 
 $FullVM |
-Where-Object {
-    $_.Name -notmatch $VMTDoNotInclude -and
-    $_.Runtime.PowerState -eq "poweredOn" -and
-    ($noToolsStatuses -contains ($_.ExtensionData.Guest.ToolsVersionStatus2 ?? $_.ExtensionData.Guest.ToolsVersionStatus))
-} |
-Select-Object Name,
-@{N = "Status"; E = { $_.ExtensionData.Guest.ToolsVersionStatus2 ?? $_.ExtensionData.Guest.ToolsVersionStatus } },
-@{N = "RunningStatus"; E = { $_.ExtensionData.Guest.ToolsRunningStatus } }
+ForEach-Object {
+    $toolsStatus = $_.ExtensionData.Guest.ToolsVersionStatus2
+    if (-not $toolsStatus) { $toolsStatus = $_.ExtensionData.Guest.ToolsVersionStatus }
+
+    if ($_.Name -notmatch $VMTDoNotInclude -and
+        $_.Runtime.PowerState -eq "poweredOn" -and
+        ($noToolsStatuses -contains $toolsStatus)) {
+        [PSCustomObject]@{
+            Name          = $_.Name
+            Status        = $toolsStatus
+            RunningStatus = $_.ExtensionData.Guest.ToolsRunningStatus
+        }
+    }
+}
 
 # Change Log
 ## 1.2 : Added Get-vCheckSetting
 ## 1.3 : Use ToolsVersionStatus2 with fallback, include RunningStatus, vSphere 8 U2+ compatible
+## 1.4 : Replace null-coalescing with PowerShell 5-compatible fallback logic

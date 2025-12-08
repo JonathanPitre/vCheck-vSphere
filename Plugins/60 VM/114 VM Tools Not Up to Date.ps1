@@ -2,7 +2,7 @@ $Title = "VM Tools Not Up to Date"
 $Header = "VM Tools Not Up to Date: [count]"
 $Display = "Table"
 $Author = "Alan Renouf, Shawn Masterson and Jonathan Pitre"
-$PluginVersion = 1.3
+$PluginVersion = 1.4
 $PluginCategory = "vSphere"
 
 # Start of Settings
@@ -42,10 +42,17 @@ $OutdatedStatuses = @(
    "guestToolsNotRunning"   # running but stopped/out of date
 )
 
+$getToolsStatus = {
+   param($vm)
+   $ts = $vm.ExtensionData.Guest.ToolsVersionStatus2
+   if (-not $ts) { $ts = $vm.ExtensionData.Guest.ToolsVersionStatus }
+   $ts
+}
+
 $query = $FullVM | Where-Object {
    $_.Name -notmatch $VMTDoNotInclude -and
    $_.Runtime.Powerstate -eq "poweredOn" -and
-   $OutdatedStatuses -contains ($_.ExtensionData.Guest.ToolsVersionStatus2 ?? $_.ExtensionData.Guest.ToolsVersionStatus)
+   $OutdatedStatuses -contains (& $getToolsStatus $_)
 }
 
 if ($VMTMaxReturn -gt 0) {
@@ -55,7 +62,7 @@ if ($VMTMaxReturn -gt 0) {
 $query |
 Select-Object Name,
 @{N = "Version"; E = { $_.Guest.ToolsVersion } },
-@{N = "Status"; E = { $_.ExtensionData.Guest.ToolsVersionStatus2 ?? $_.ExtensionData.Guest.ToolsVersionStatus } },
+@{N = "Status"; E = { & $getToolsStatus $_ } },
 @{N = "RunningStatus"; E = { $_.ExtensionData.Guest.ToolsRunningStatus } } |
 Sort-Object Name
 
@@ -67,3 +74,4 @@ $Comments = ("The following VMs have out-of-date or missing VMware Tools (Max Sh
 ## 1.1 : Added Get-vCheckSetting
 ## 1.2 : Use ToolsVersionStatus2/RunningStatus (vSphere 8), expand statuses, add optional limit=0 for no cap
 ## 1.3 : Optional scrape of Broadcom KB 304809 to show latest published Tools version
+## 1.4 : Replace null-coalescing with PowerShell 5-compatible fallback logic
