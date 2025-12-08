@@ -1,6 +1,6 @@
 $Title = "VMs Ballooning or Swapping"
 $Header = "VMs Ballooning or Swapping: [count]"
-$Comments = "Ballooning and swapping may indicate a lack of memory or a limit on a VM, this may be an indication of not enough memory in a host or a limit held on a VM. For details see <a href='https://www.vmware.com/docs/perf-vsphere-memory_management' target='_blank'>VMware vSphere Memory Management and Monitoring</a>."
+$Comments = "Ballooning and swapping may indicate a lack of memory or a limit on a VM, this may be an indication of not enough memory in a host or a limit held on a VM. For details see <a href='https://docs.vmware.com/en/VMware-vSphere/8.0/vsphere-resource-management/index.html' target='_blank'>VMware vSphere Memory Management and Monitoring</a>."
 $Display = "Table"
 $Author = "Alan Renouf, Frederic Martin"
 $PluginVersion = 1.3
