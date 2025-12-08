@@ -2,8 +2,8 @@ $Title = "VMs with CPU or Memory Reservations Configured"
 $Header = "VMs with CPU or Memory Reservations Configured: [count]"
 $Comments = "The following VMs have a CPU or Memory Reservation configured which may impact the performance of the VM. Note: -1 indicates no reservation"
 $Display = "Table"
-$Author = "Dan Jellesma"
-$PluginVersion = 1.2
+$Author = "Dan Jellesma and Jonathan Pitre"
+$PluginVersion = 1.3
 $PluginCategory = "vSphere"
 
 # Start of Settings
@@ -17,8 +17,8 @@ $MCRDoNotInclude = Get-vCheckSetting $Title "MCRDoNotInclude" $MCRDoNotInclude
 $FullVM |
 Where-Object {
     $_.Name -notmatch $MCRDoNotInclude -and (
-        [double]($_.ExtensionData.ResourceConfig.CpuAllocation.Reservation ?? 0) -gt 0 -or
-        [double]($_.ExtensionData.ResourceConfig.MemoryAllocation.Reservation ?? 0) -gt 0
+        [double]($_.ExtensionData.ResourceConfig.CpuAllocation.Reservation) -gt 0 -or
+        [double]($_.ExtensionData.ResourceConfig.MemoryAllocation.Reservation) -gt 0
     )
 } |
 Select-Object Name,
@@ -29,3 +29,4 @@ Select-Object Name,
 ## 1.0 : Initial Release
 ## 1.1 : Added Get-vCheckSetting
 ## 1.2 : Use ExtensionData.ResourceConfig* reservations (vSphere 8 compatible) and treat null as 0
+## 1.3 : Replace null-coalescing (??) with PowerShell 5-compatible casting
