@@ -2,7 +2,8 @@
 # vCheck Plug-in: vCenter Site Recovery Manager - RPO Violation Report
 #
 # This plug-in can be used to generate a custom report of RPO violations found in the vCenter event log. It is heavily
-# based on Alan Renouf's work found at: http://www.virtu-al.net/2013/06/14/reporting-on-rpo-violations-from-vsphere-replication/.
+# based on Alan Renouf's work: http://www.virtu-al.net/2013/06/14/reporting-on-rpo-violations-from-vsphere-replication
+# See also Broadcom KB on RPO violations: https://knowledge.broadcom.com/external/article/334259/vsphere-replication-recovery-point-objec.html
 #
 # The settings are mostly self-explanatory:
 #
@@ -21,10 +22,10 @@
 
 $Title = "Site Recovery Manager - RPO Violation Report"
 $Header = "Site Recovery Manager - RPO Violations: [count]"
-$Comments = "This is a customizable report of RPO violations found in the vCenter event log."
+$Comments = "This is a customizable report of RPO violations found in the vCenter event log. See <a href='https://knowledge.broadcom.com/external/article/334259/vsphere-replication-recovery-point-objec.html' target='_blank'>Broadcom KB 334259</a> for more information."
 $Display = "Table"
 $Author = "Joel Gibson, based on work by Alan Renouf"
-$PluginVersion = 0.7
+$PluginVersion = 0.8
 $PluginCategory = "vSphere"
 
 # Start of Settings
@@ -50,47 +51,45 @@ $ActiveViolationsOnly = Get-vCheckSetting $Title "ActiveViolationsOnly" $ActiveV
 ## 0.6 : Change to Get-VIEventPlus, removed MaxSampleVIEvent variable.
 ## 0.7 : Update to Get-vCheckSetting, layout changes
 
-## Begin code block obtained from: http://www.virtu-al.net/2013/06/14/reporting-on-rpo-violations-from-vsphere-replication/
+## Begin code block obtained from: http://www.virtu-al.net/2013/06/14/reporting-on-rpo-violations-from-vsphere-replication (adapted from earlier community example)
 #  modified by Joel Gibson
 
 Foreach ($RPOvm in ($VM | Where-Object { $_.name -match $VMNameRegex })) {
-   $RPOEvents = Get-VIEventPlus -Entity $RPOvm -EventType "hbr.primary.RpoTooLowForServerEvent" | Where-Object { $_.Vm.Name -eq $RPOvm.Name } | Select-Object EventTypeId, CreatedTime, FullFormattedMessage, @{Name="VMName";Expression={$_.Vm.Name}} | Sort-Object CreatedTime
+   $RPOEvents = Get-VIEventPlus -Entity $RPOvm -EventType "hbr.primary.RpoTooLowForServerEvent" | Where-Object { $_.Vm.Name -eq $RPOvm.Name } | Select-Object EventTypeId, CreatedTime, FullFormattedMessage, @{Name = "VMName"; Expression = { $_.Vm.Name } } | Sort-Object CreatedTime
    if ($RPOEvents) {
       $Count = 0
 
       do {
-            $details = "" | Select-Object VMName, ViolationStart, ViolationEnd, Mins
-            if ($RPOEvents[$count].EventTypeID -match "Violated") {
-               If (-not $details.Start) {
-                  $Details.VMName = $RPOEvents[$Count].VMName
-                  $Details.ViolationStart = $RPOEvents[$Count].CreatedTime
-                  Do {
-                     $Count++
-                  } until (($RPOEvents[$Count].EventTypeID -match "Restored") -or ($Count -gt $RPOEvents.Count))
-                  if ($RPOEvents[$count].EventTypeID -match "Restored") {
-                     $details.ViolationEnd = $RPOEvents[$Count].CreatedTime
-                     $Time = $details.ViolationEnd - $details.ViolationStart
+         $details = "" | Select-Object VMName, ViolationStart, ViolationEnd, Mins
+         if ($RPOEvents[$count].EventTypeID -match "Violated") {
+            If (-not $details.Start) {
+               $Details.VMName = $RPOEvents[$Count].VMName
+               $Details.ViolationStart = $RPOEvents[$Count].CreatedTime
+               Do {
+                  $Count++
+               } until (($RPOEvents[$Count].EventTypeID -match "Restored") -or ($Count -gt $RPOEvents.Count))
+               if ($RPOEvents[$count].EventTypeID -match "Restored") {
+                  $details.ViolationEnd = $RPOEvents[$Count].CreatedTime
+                  $Time = $details.ViolationEnd - $details.ViolationStart
                      
-                  } Else {
-                     $details.ViolationEnd = "No End Date"
-                     $Time = $(Get-Date) - $details.ViolationStart
+               } Else {
+                  $details.ViolationEnd = "No End Date"
+                  $Time = $(Get-Date) - $details.ViolationStart
                      
-                  }
-                  $details.Mins = ("{0:N2}" -f $Time.TotalMinutes)
                }
+               $details.Mins = ("{0:N2}" -f $Time.TotalMinutes)
             }
+         }
 
-            ## filter the results based on the number of minutes an RPO has been exceeded by
-            ## filter the results based on unresolved violations, if desired
-            if ($details.Mins -gt $RPOviolationMins)
-            {
-               if ((-not $ActiveViolationsOnly) -or ($ActiveViolationsOnly -and $details.ViolationEnd -eq "No End Date"))
-               {
-                  $details
-               }
+         ## filter the results based on the number of minutes an RPO has been exceeded by
+         ## filter the results based on unresolved violations, if desired
+         if ($details.Mins -gt $RPOviolationMins) {
+            if ((-not $ActiveViolationsOnly) -or ($ActiveViolationsOnly -and $details.ViolationEnd -eq "No End Date")) {
+               $details
             }
-            $Count++
+         }
+         $Count++
       } until ($count -gt $RPOEvents.Count)
    }
 }
-## End of code block obtained from: http://www.virtu-al.net/2013/06/14/reporting-on-rpo-violations-from-vsphere-replication/.
+## End of code block obtained from: http://www.virtu-al.net/2013/06/14/reporting-on-rpo-violations-from-vsphere-replication.
