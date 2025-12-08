@@ -26,7 +26,7 @@ $ExceptionFP = ""
 # Folder name regex to skip (e.g., "iso|templates|backups"), empty = none
 $ExcludeFolderPattern = ""
 # Show progress bars (disable to save a bit of time in very large environments)
-$ShowProgress = $false
+$ShowProgress = $true
 # End of Settings
 
 # Variables for the results
