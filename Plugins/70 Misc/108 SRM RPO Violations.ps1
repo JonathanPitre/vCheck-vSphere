@@ -24,8 +24,8 @@ $Title = "Site Recovery Manager - RPO Violation Report"
 $Header = "Site Recovery Manager - RPO Violations: [count]"
 $Comments = "This is a customizable report of RPO violations found in the vCenter event log. See <a href='https://knowledge.broadcom.com/external/article/334259/vsphere-replication-recovery-point-objec.html' target='_blank'>Broadcom KB 334259</a> for more information."
 $Display = "Table"
-$Author = "Joel Gibson, based on work by Alan Renouf"
-$PluginVersion = 0.8
+$Author = "Joel Gibson and Jonathan Pitre, based on work by Alan Renouf"
+$PluginVersion = 0.9
 $PluginCategory = "vSphere"
 
 # Start of Settings
@@ -50,6 +50,8 @@ $ActiveViolationsOnly = Get-vCheckSetting $Title "ActiveViolationsOnly" $ActiveV
 ## 0.5 : Fixed a bug where filtering results by duration of RPO violation was not working.
 ## 0.6 : Change to Get-VIEventPlus, removed MaxSampleVIEvent variable.
 ## 0.7 : Update to Get-vCheckSetting, layout changes
+## 0.8 : Fix EventTypeID typo (EvenTypeId -> EventType), add Broadcom KB link, make description links clickable
+## 0.9 : Guard array access when searching for Restored events to avoid out-of-bounds when none exist
 
 ## Begin code block obtained from: http://www.virtu-al.net/2013/06/14/reporting-on-rpo-violations-from-vsphere-replication (adapted from earlier community example)
 #  modified by Joel Gibson
@@ -67,8 +69,9 @@ Foreach ($RPOvm in ($VM | Where-Object { $_.name -match $VMNameRegex })) {
                $Details.ViolationStart = $RPOEvents[$Count].CreatedTime
                Do {
                   $Count++
-               } until (($RPOEvents[$Count].EventTypeID -match "Restored") -or ($Count -gt $RPOEvents.Count))
-               if ($RPOEvents[$count].EventTypeID -match "Restored") {
+               } until (($Count -ge $RPOEvents.Count) -or ($RPOEvents[$Count].EventTypeID -match "Restored"))
+
+               if ($Count -lt $RPOEvents.Count -and $RPOEvents[$count].EventTypeID -match "Restored") {
                   $details.ViolationEnd = $RPOEvents[$Count].CreatedTime
                   $Time = $details.ViolationEnd - $details.ViolationStart
                      
