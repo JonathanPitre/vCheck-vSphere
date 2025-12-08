@@ -1,6 +1,6 @@
-$Title = "Virtual machines with incorrect OS configuration"
-$Header = "Virtual machines with incorrect OS configuration: [count]"
-$Comments = "The following virtual machines have an installed OS that is different from the configured OS. This can impact the performance of the virtual machine."
+$Title = "VMs with incorrect OS configuration"
+$Header = "VMs with incorrect OS configuration: [count]"
+$Comments = "The following VMs have an installed OS that is different from the configured OS. This can impact the performance of the VM."
 $Display = "Table"
 $Author = "Robert van den Nieuwendijk"
 $PluginVersion = 1.3
