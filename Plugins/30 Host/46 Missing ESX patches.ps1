@@ -3,10 +3,14 @@ $Header = "Missing ESX(i) updates and patches: [count]"
 $Comments = "The following updates and/or patches are not applied."
 $Display = "Table"
 $Author = "Luc Dekens, Jonathan Pitre"
-$PluginVersion = 2.0
+$PluginVersion = 2.1
 $PluginCategory = "vSphere"
 
 # Start of Settings
+# Optional: attempt vLCM remediation (vSphere 8+ only). Default = report-only.
+$EnablevLCMRemediation = $false
+# Mode: "Precheck" runs a vLCM precheck task, "Remediate" triggers remediation.
+$vLCMRemediationMode = "Precheck"
 # End of Settings
 
 # Get vCenter version to determine which method to use
@@ -38,6 +42,8 @@ if ($vCenterVersion -ge 8) {
             foreach ($esx in $VMH) {
                 try {
                     $hostView = Get-View -Id $esx.Id -Property Name, Runtime, Config
+                    $clusterObj = $esx | Get-Cluster -ErrorAction SilentlyContinue
+                    $clusterName = if ($clusterObj) { $clusterObj.Name } else { "Standalone" }
                     
                     # Check compliance using ImageManager (works for both clustered and standalone hosts)
                     try {
@@ -57,6 +63,7 @@ if ($vCenterVersion -ge 8) {
                                     
                                     $result += [PSCustomObject]@{
                                         Host        = $esx.Name
+                                        Cluster     = $clusterName
                                         Baseline    = "vLCM Image"
                                         Name        = if ($component.Name) { $component.Name } else { $component.Version }
                                         ReleaseDate = if ($component.ReleaseDate) { $component.ReleaseDate.ToString() } else { "N/A" }
@@ -79,6 +86,7 @@ if ($vCenterVersion -ge 8) {
                                     
                                     $result += [PSCustomObject]@{
                                         Host        = $esx.Name
+                                        Cluster     = $clusterName
                                         Baseline    = "vLCM Image"
                                         Name        = $patch.Name
                                         ReleaseDate = if ($patch.ReleaseDate) { $patch.ReleaseDate.ToString() } else { "N/A" }
@@ -106,6 +114,7 @@ if ($vCenterVersion -ge 8) {
                                     if ($desiredImage -and $currentImage -and $desiredImage.Image -ne $currentImage.Image) {
                                         $result += [PSCustomObject]@{
                                             Host        = $esx.Name
+                                            Cluster     = $clusterName
                                             Baseline    = "vLCM Image"
                                             Name        = "Image Update Required"
                                             ReleaseDate = "N/A"
@@ -136,6 +145,8 @@ elseif ($vCenterVersion -ge 6 -and $vCenterVersion -lt 8) {
         foreach ($esx in $VMH) {
             try {
                 $compliance = Get-Compliance -Entity $esx -Detailed -ErrorAction SilentlyContinue
+                $clusterObj = $esx | Get-Cluster -ErrorAction SilentlyContinue
+                $clusterName = if ($clusterObj) { $clusterObj.Name } else { "Standalone" }
                 foreach ($baseline in ($compliance | Where-Object { $_.Status -eq "NotCompliant" })) {
                     $baseline.NotCompliantPatches | ForEach-Object {
                         $kbUrl = ""
@@ -148,6 +159,7 @@ elseif ($vCenterVersion -ge 6 -and $vCenterVersion -lt 8) {
                         
                         $result += [PSCustomObject]@{
                             Host        = $esx.Name
+                            Cluster     = $clusterName
                             Baseline    = $baseline.Baseline.Name
                             Name        = $_.Name
                             ReleaseDate = if ($_.ReleaseDate) { $_.ReleaseDate.ToString() } else { "N/A" }
@@ -171,9 +183,51 @@ else {
 
 $result
 
+# Optional: vLCM remediation (vSphere 8+ only). Safe by default (precheck mode).
+if ($vCenterVersion -ge 8 -and $EnablevLCMRemediation -and $result) {
+    # Requires VMware.Lifecycle PowerCLI module (vLCM cmdlets)
+    $lifecycleModule = Get-Module -ListAvailable VMware.Lifecycle -ErrorAction SilentlyContinue
+    if (-not $lifecycleModule) {
+        Write-Warning "vLCM remediation requested but VMware.Lifecycle module not installed. Install VMware.PowerCLI 13.2+ to enable vLCM cmdlets."
+    } else {
+        # Remediate per-cluster to avoid partial host remediation
+        $nonCompliantClusters = $result | Select-Object -ExpandProperty Cluster -Unique | Where-Object { $_ -ne "Standalone" }
+        foreach ($clusterName in $nonCompliantClusters) {
+            try {
+                $clusterObj = Get-Cluster -Name $clusterName -ErrorAction Stop
+                if ($vLCMRemediationMode -eq "Remediate") {
+                    Write-Host "Starting vLCM remediation for cluster '$clusterName'..." -ForegroundColor Cyan
+                    Start-LcmClusterRemediation -Cluster $clusterObj -Confirm:$false
+                } else {
+                    Write-Host "Running vLCM precheck for cluster '$clusterName'..." -ForegroundColor Cyan
+                    Start-LcmClusterPrecheck -Cluster $clusterObj -Confirm:$false
+                }
+            } catch {
+                Write-Warning "vLCM remediation/precheck failed for cluster '$clusterName': $_"
+            }
+        }
+        # Standalone hosts: attempt direct remediation if desired
+        $standaloneHosts = $result | Where-Object { $_.Cluster -eq "Standalone" } | Select-Object -ExpandProperty Host -Unique
+        foreach ($hostName in $standaloneHosts) {
+            try {
+                $hostObj = Get-VMHost -Name $hostName -ErrorAction Stop
+                if ($vLCMRemediationMode -eq "Remediate") {
+                    Write-Host "Starting vLCM remediation for host '$hostName'..." -ForegroundColor Cyan
+                    Start-LcmHostRemediation -VMHost $hostObj -Confirm:$false
+                } else {
+                    Write-Host "Running vLCM precheck for host '$hostName'..." -ForegroundColor Cyan
+                    Start-LcmHostPrecheck -VMHost $hostObj -Confirm:$false
+                }
+            } catch {
+                Write-Warning "vLCM remediation/precheck failed for host '$hostName': $_"
+            }
+        }
+    }
+}
+
 # Update comments based on version
 if ($vCenterVersion -ge 8) {
-    $Comments = "The following updates and/or patches are not applied (checked via vSphere Lifecycle Manager). For vSphere 8.0+, VUM has been replaced by vLCM. See <a href='https://www.vmware.com/docs/vsphere-esxi-vcenter-server-80-lifecycle-manager' target='_blank'>vSphere Lifecycle Manager Documentation</a> for more information."
+    $Comments = "The following updates and/or patches are not applied (checked via vSphere Lifecycle Manager). For vSphere 8.0+, VUM has been replaced by vLCM. See <a href='https://docs.vmware.com/en/VMware-vSphere/8.0/vsphere-lifecycle-manager/index.html' target='_blank'>vSphere Lifecycle Manager Documentation</a> for more information."
 } else {
     $Comments = "The following updates and/or patches are not applied (checked via vSphere Update Manager)."
 }
