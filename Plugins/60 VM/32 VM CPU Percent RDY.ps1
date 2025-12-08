@@ -1,5 +1,5 @@
 $Title = "VM CPU %RDY"
-$Comments = "The following VMs have high CPU RDY times, this can cause performance issues. For more information see <a href='https://knowledge.broadcom.com/external/article/387750' target='_blank'>Understanding the CPU Ready values in the vSphere Client</a> and <a href='https://www.vmware.com/docs/vsphere-esxi-vcenter-server-80-performance-best-practices' target='_blank'>Performance Best Practices for VMware vSphere 8.0</a>"
+$Comments = "The following VMs have high CPU RDY times, this can cause performance issues. For more information see <a href='https://knowledge.broadcom.com/external/article/387750' target='_blank'>Understanding the CPU Ready values in the vSphere Client</a> and <a href='https://docs.vmware.com/en/VMware-vSphere/8.0/vsphere-performance/index.html' target='_blank'>Performance Best Practices for VMware vSphere 8.0</a>"
 $Display = "Table"
 $Author = "Alan Renouf"
 $PluginVersion = 1.3
@@ -7,7 +7,7 @@ $PluginCategory = "vSphere"
 
 # Start of Settings 
 # CPU ready on VMs should not exceed
-$PercCPUReady = 10.0
+$PercCPUReady = 5.0
 # End of Settings
 
 # Setup plugin-specific language table
