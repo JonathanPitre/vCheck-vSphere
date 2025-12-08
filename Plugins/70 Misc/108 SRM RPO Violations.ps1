@@ -62,7 +62,7 @@ Foreach ($RPOvm in ($VM | Where-Object { $_.name -match $VMNameRegex })) {
       do {
          $details = "" | Select-Object VMName, ViolationStart, ViolationEnd, Mins
          if ($RPOEvents[$count].EventTypeID -match "Violated") {
-            If (-not $details.Start) {
+            if (-not $details.ViolationStart) {
                $Details.VMName = $RPOEvents[$Count].VMName
                $Details.ViolationStart = $RPOEvents[$Count].CreatedTime
                Do {
